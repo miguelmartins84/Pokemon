@@ -11,46 +11,67 @@ import Foundation
 
 protocol PokemonManagerType {
     
-    func fetchAllPokemonsModels() async throws
-    func fetchNextPokemons() async throws -> [Pokemon]
+    func fetchInitialPokemons() async throws -> [Pokemon]
+    func fetchPokemons() async throws -> [Pokemon]
     func fetchPokemons(withNamesStartingWith searchText: String) async throws -> [Pokemon]
+    func didChangePokemonFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool) async throws -> Bool
+    func didStoreFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool)
 }
 
 // MARK: - PokemonManager
 
 class PokemonManager {
     
-    static let shared: PokemonManager = PokemonManager(pokemonService: PokemonService())
+    // MARK: - Properties
     
-    private var allPokemonsModels: [PokemonModel] = []
-    private var refinedPokemonsModels: [PokemonModel] = []
-    private var fetchedPokemons: [Pokemon] = []
-    private var refinedPokemons: [Pokemon] = []
-    private var fetchedPokemonsDictionary: [String: Pokemon] = [:]
+    static let shared: PokemonManager = PokemonManager()
     
     private var pokemonService: PokemonServiceType
+    private var favoritePokemonsDataManager: FavoritePokemonsDataManagerType
     
-    private var offset = 0
-    private let limit = 20
+    // Stores a dictionary and Set of already fetched pokemons and pages for quicker access
+    private var allFetchedPokemonsModelsDictionary: [String: PokemonModel] = [:]
+    private var allFetchedPokemonsDictionary: [String: Pokemon] = [:]
+    private var currentFetchedPokemonsDictionary: [Int: Pokemon] = [:]
     
-    private var fetchedPages: Set<Int> = []
-    private var lastFetchedPage = 0
+    // Stores the ordered pokemon models and all the already fetched pokemons
+    private var allPokemonsModels: [PokemonModel] = []
+    private var allFetchedPokemons: [Pokemon] = []
+    private var allFetchedPages: Set<Int> = []
+    private var allOffset = 0
+    
+    // Stores the refined pokemon models when a user searches (for paging)
+    private var refinedPokemonsModels: [PokemonModel] = []
+    private var refinedPokemons: [Pokemon] = []
+    private var refinedFetchedPages: Set<Int> = []
+    private var refinedOffset = 0
     
     private var isInSearchContext: Bool = false
-    
-    private lazy var currentPokemonsModels: [PokemonModel] = {
-        
-        self.isInSearchContext ? self.refinedPokemonsModels : self.allPokemonsModels
-    }()
-    
-    private lazy var currentPokemons: [Pokemon] = {
-        
-        self.isInSearchContext ? self.refinedPokemons: self.fetchedPokemons
-    }()
 
-    init(pokemonService: PokemonServiceType) {
+    private let limit = 20
+    
+//    private lazy var currentPokemonsModels: [PokemonModel] = {
+//        
+//        self.isInSearchContext ? self.refinedPokemonsModels : self.allPokemonsModels
+//    }()
+    
+//    private lazy var currentPokemons: [Pokemon] = {
+//        
+//        self.isInSearchContext ? self.refinedPokemons: self.allFetchedPokemons
+//    }()
+//    
+//    private lazy var currentFetchedPages: Set<Int> = {
+//        
+//        self.isInSearchContext ? self.refinedFetchedPages : self.fetchedPages
+//    }()
+
+    init(
+        pokemonService: PokemonServiceType = PokemonService(),
+        favoritePokemonsDataManager: FavoritePokemonsDataManagerType = FavoritePokemonsDataManager()
+    ) {
         
         self.pokemonService = pokemonService
+        self.favoritePokemonsDataManager = favoritePokemonsDataManager
     }
 }
 
@@ -60,15 +81,35 @@ private extension PokemonManager {
  
     func appendPokemons(with pokemons: [Pokemon]) {
         
-        self.isInSearchContext ? self.refinedPokemons.append(contentsOf: pokemons) : self.fetchedPokemons.append(contentsOf: pokemons)
+//        for pokemon in pokemons {
+//            
+//            if self.fetchedPokemonsDictionary[pokemon.name] == nil {
+//                
+//                self.fetchedPokemonsDictionary[pokemon.name] = pokemon
+//            }
+//        }
+
+        if self.isInSearchContext {
+            
+            self.refinedPokemons.append(contentsOf: pokemons)
+        }
+        
+//        self.isInSearchContext ?  : self.allFetchedPokemons.append(contentsOf: pokemons)
     }
     
-    func clearState(isSearch: Bool = false) {
-                
-        self.isInSearchContext = isSearch
-        self.lastFetchedPage = 0
-        self.offset = 0
-        self.fetchedPages.removeAll()
+    func clearState(isSearch: Bool) {
+        
+        if isSearch {
+            
+            self.isInSearchContext = true
+            self.refinedOffset = 0
+            self.refinedPokemons = []
+            self.refinedFetchedPages = []
+            
+        } else {
+            
+            self.isInSearchContext = false
+        }
     }
 }
 
@@ -76,39 +117,120 @@ private extension PokemonManager {
 
 extension PokemonManager: PokemonManagerType {
     
-    func fetchAllPokemonsModels() async throws {
+    func fetchInitialPokemons() async throws -> [Pokemon] {
         
-        let pokemonsModels = try await self.pokemonService.fetchAllPokemonModels()
-        self.allPokemonsModels = pokemonsModels
+        let pokemonModels = try await self.pokemonService.fetchAllPokemonModels()
+        self.allPokemonsModels = pokemonModels.sorted(by: { $0.name < $1.name })
+        self.allPokemonsModels.forEach { pokemonModel in
+            
+            self.allFetchedPokemonsModelsDictionary[pokemonModel.name] = pokemonModel
+        }
+        
+        let initialPokemonModels = Array(self.allPokemonsModels[0 ..< self.limit])
+                
+        try await self.loadPokemons(from: initialPokemonModels)
+        
+        let sortedPokemons = self.getSortedPokemonsFromCurrentlyFetched()
+        
+        self.allFetchedPokemons = sortedPokemons
+        self.allFetchedPages.insert(1)
+        self.allOffset += sortedPokemons.count
+
+        return self.allFetchedPokemons
     }
     
-    func fetchNextPokemons() async throws -> [Pokemon] {
+    private func getSortedPokemonsFromCurrentlyFetched() -> [Pokemon] {
         
-        let numberOfPages = self.currentPokemonsModels.count / self.limit
+        var currentFetchedPokemons: [Pokemon] = []
         
-        let page = self.lastFetchedPage + 1
+        let keys = self.currentFetchedPokemonsDictionary.keys.sorted()
         
-        if fetchedPages.contains(page) == false {
+        for key in keys {
             
-            let lastIndexToFetch = self.limit * page
+            if let pokemon = self.currentFetchedPokemonsDictionary[key] {
+                
+                currentFetchedPokemons.append(pokemon)
+            }
+        }
+        
+        return currentFetchedPokemons
+    }
+
+    private func loadPokemons(from pokemonModels: [PokemonModel]) async throws {
+        
+        self.currentFetchedPokemonsDictionary = [:]
+        
+        return try await withThrowingTaskGroup(of: Pokemon.self) { group in
             
-            if self.offset <= lastIndexToFetch, page <= numberOfPages {
+            for pokemonModel in pokemonModels {
                 
-                let pokemonsModels = Array(self.currentPokemonsModels[self.offset ..< lastIndexToFetch])
-                let fetchedPokemons = try await self.pokemonService.fetchPokemons(from: pokemonsModels)
+                group.addTask {
+                    
+                    let pokemonName = pokemonModel.name
+                    
+                    let pokemon = try await self.pokemonService.fetchPokemon(for: pokemonName)
+                    return pokemon
+                }
+            }
+            
+            for try await fetchedPokemon in group {
+
+                self.currentFetchedPokemonsDictionary[fetchedPokemon.id] = fetchedPokemon
+            }
+        }
+    }
+    
+//    func fetchAllPokemonModels() async throws {
+//        
+//        let pokemonsModels = try await self.pokemonService.fetchAllPokemonModels()
+//        self.allPokemonsModels = pokemonsModels.sorted(by: { $0.name < $1.name })
+//        self.allPokemonsModels.forEach { pokemonModel in
+//            
+//            self.fetchedPokemonsModelsDictionary[pokemonModel.name] = pokemonModel
+//        }
+//    }
+    
+    func fetchPokemons() async throws -> [Pokemon] {
+        
+        let currentPokemonsModels = self.isInSearchContext ? self.refinedPokemonsModels : self.allPokemonsModels
+        let currentFetchedPages = self.isInSearchContext ? self.refinedFetchedPages : self.allFetchedPages
+        let currentPokemons = self.isInSearchContext ? self.refinedPokemons : self.allFetchedPokemons
+        let offset = self.isInSearchContext ? self.refinedOffset : self.allOffset
+        
+        let numberOfPages = currentPokemonsModels.count / limit
+        
+        let currentPage = offset == 0 ? 1 : (offset / limit) + 1
+        
+        if currentFetchedPages.contains(currentPage) == false {
+            
+            let lastIndexToFetch = limit * currentPage
+            
+            if offset <= lastIndexToFetch, currentPage <= numberOfPages {
                 
-                self.appendPokemons(with: fetchedPokemons)
-                fetchedPokemons.forEach( { self.fetchedPokemonsDictionary[$0.name] = $0 } )
+                let pokemonModels = Array(currentPokemonsModels[offset ..< lastIndexToFetch])
+                try await self.loadPokemons(from: pokemonModels)
                 
-                print("Fetched page: \(page) with offset: \(self.offset) to \(lastIndexToFetch) with maximum: \(self.currentPokemonsModels.count) current pokemons: \(self.currentPokemons.count)")
-                self.offset += fetchedPokemons.count
-                self.lastFetchedPage = page
-                self.fetchedPages.insert(page)
+                let fetchedPokemons = self.getSortedPokemonsFromCurrentlyFetched()
+                  
+                if self.isInSearchContext {
+
+                    self.refinedFetchedPages.insert(currentPage)
+                    self.refinedOffset += fetchedPokemons.count
+                    self.refinedPokemons.append(contentsOf: fetchedPokemons)
+
+                } else {
+                    
+                    self.allFetchedPages.insert(currentPage)
+                    self.allOffset += fetchedPokemons.count
+                    self.allFetchedPokemons.append(contentsOf: fetchedPokemons)
+                }
+                
+                print("Fetched page: \(currentPage) with offset: \(offset) to \(lastIndexToFetch) with maximum: \(currentPokemonsModels.count) current pokemons: \(currentPokemons.count)")
                 
                 return fetchedPokemons
             }
         }
-
+        
         return []
     }
     
@@ -126,31 +248,68 @@ extension PokemonManager: PokemonManagerType {
             var alreadyFetchedPokemons: [Pokemon] = []
             var pokemonModelsToFetch: [PokemonModel] = []
             
-            for pokemon in filteredPokemonsModels {
+            for pokemonModel in filteredPokemonsModels {
                 
-                if let pokemon = self.fetchedPokemonsDictionary[pokemon.name] {
+                if let fetchedPokemon = self.allFetchedPokemonsDictionary[pokemonModel.name] {
                     
-                    alreadyFetchedPokemons.append(pokemon)
+                    alreadyFetchedPokemons.append(fetchedPokemon)
                     
                 } else {
                     
-                    pokemonModelsToFetch.append(pokemon)
+                    pokemonModelsToFetch.append(pokemonModel)
                 }
             }
             
-            var refinedPokemons = try await self.pokemonService.fetchPokemons(from: pokemonModelsToFetch)
-            refinedPokemons.append(contentsOf: alreadyFetchedPokemons)
+            var refinedPokemons: [Pokemon] = alreadyFetchedPokemons
             
-            self.refinedPokemons = refinedPokemons
+            if pokemonModelsToFetch.isEmpty == false {
+                
+                let fetchedPokemons = try await self.pokemonService.fetchPokemons(from: pokemonModelsToFetch)
+                refinedPokemons.append(contentsOf: fetchedPokemons)
+            }
             
-            refinedPokemons.forEach( { self.fetchedPokemonsDictionary[$0.name] = $0 } )
+            self.refinedPokemons = refinedPokemons.sorted(by: { $0.name < $1.name})
+            self.refinedPokemons.forEach( { self.allFetchedPokemonsDictionary[$0.name] = $0 } )
+            self.refinedFetchedPages.insert(1)
 
             return refinedPokemons
             
         } else {
             
-            self.clearState()
-            return self.fetchedPokemons
+            self.clearState(isSearch: false)
+            return self.allFetchedPokemons
+        }
+    }
+    
+    func didStoreFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool) {
+        
+        let favoritePokemon = FavoritePokemonDataModel()
+        favoritePokemon.id = pokemonId
+        favoritePokemon.name = pokemonName
+        
+        if isFavorite == true {
+            
+            self.favoritePokemonsDataManager.addToFavorites(favoritePokemonDataModel: favoritePokemon)
+            
+        } else {
+            
+            self.favoritePokemonsDataManager.removeFromFavorites(favoritePokemonDataModel: favoritePokemon)
+        }
+    }
+    
+    func didChangePokemonFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool) async throws -> Bool {
+        
+        if isFavorite == true {
+            
+            let favoriteStatus = try await self.pokemonService.addPokemonToFavorites(with: pokemonId, pokemonName: pokemonName)
+
+            
+            return favoriteStatus
+        } else {
+            
+            let favoriteStatus = try await self.pokemonService.removePokemonFromFavorites(with: pokemonId, pokemonName: pokemonName)
+            
+            return favoriteStatus
         }
     }
 }

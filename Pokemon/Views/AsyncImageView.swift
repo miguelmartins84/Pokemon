@@ -7,54 +7,86 @@
 
 import UIKit
 
-enum AsyncImageDownloaderError: Error {
-    
-    case errorFetchingImage(errorMessage: String)
-    case errorConvertingDataToImage
-}
-
-class AsyncImageManager {
-    
-    static let shared: AsyncImageManager = AsyncImageManager()
-    let imageCache = NSCache<NSString, UIImage>()
-    
-    func downloadImageData(from imageURL: URL) async throws -> UIImage {
-        
-        let request = URLRequest(url: imageURL)
-        
-        // Check if image is in Cache if it is return it
-        if let imageFromCache = self.imageCache.object(forKey: NSString(string: imageURL.absoluteString)) {
-            
-            return imageFromCache
-        }
-                
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let response = response as? HTTPURLResponse,
-              response.statusCode >= 200 && response.statusCode < 300 else {
-            
-            throw AsyncImageDownloaderError.errorFetchingImage(errorMessage: "Failed to fetch image from url: \(imageURL.absoluteString)")
-        }
-        
-        guard let image = UIImage(data: data) else {
-            
-            throw AsyncImageDownloaderError.errorConvertingDataToImage
-        }
-        
-        // Store image on imageCache
-        self.imageCache.setObject(image, forKey: NSString(string: imageURL.absoluteString))
-        
-        return image
-    }
-}
-
-class AsyncImageView: UIImageView {
+class AsyncImageView: UIView {
     
     var pokemonImageURL: URL?
+    private var asyncImageManager: AsyncImageManagerType
+    
+    private(set) var image: UIImage?
+    
+    private var loaderView: PokemonLoader = PokemonLoader().usingAutoLayout()
+    
+    private var imageView: UIImageView = {
+        
+        let imageView = UIImageView().usingAutoLayout()
+        imageView.contentMode = .scaleAspectFit
+        imageView.isHidden = true
 
+        return imageView
+    }()
+    
+    init(
+        pokemonImageURL: URL? = nil,
+        asyncImageManager: AsyncImageManagerType = AsyncImageManager.shared
+    ) {
+        self.pokemonImageURL = pokemonImageURL
+        self.asyncImageManager = asyncImageManager
+        
+        super.init(frame: .zero)
+        
+        self.configureView()
+        self.addSubviews()
+        self.defineConstraints()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func configureView() {
+        
+        self.loaderView.startAnimation()
+    }
+    
+    private func addSubviews() {
+        
+        self.addSubview(self.loaderView)
+        self.addSubview(self.imageView)
+    }
+    
+    private func defineConstraints() {
+        
+        // MARK: - LoaderView constraints
+        
+        NSLayoutConstraint.activate([
+        
+            self.loaderView.centerXAnchor.constraint(equalTo: self.centerXAnchor),
+            self.loaderView.centerYAnchor.constraint(equalTo: self.centerYAnchor),
+            self.loaderView.heightAnchor.constraint(equalToConstant: 48),
+            self.loaderView.widthAnchor.constraint(equalToConstant: 48)
+        ])
+        
+        // MARK: - ImageView constraints
+        NSLayoutConstraint.activate([
+        
+            self.imageView.topAnchor.constraint(equalTo: self.topAnchor),
+            self.imageView.leadingAnchor.constraint(equalTo: self.leadingAnchor),
+            self.imageView.trailingAnchor.constraint(equalTo: self.trailingAnchor),
+            self.imageView.bottomAnchor.constraint(equalTo: self.bottomAnchor)
+        ])
+    }
+    
+    func setImage(image: UIImage) {
+
+        self.image = nil
+        self.image = image
+        self.imageView.image = image
+    }
+    
     func downloadImage(with pokemonImageURL: URL) async {
         
-        self.image = nil
+        self.cellStatus(shouldShowLoader: true)
+        
         self.pokemonImageURL = pokemonImageURL
         
         Task { @MainActor in
@@ -63,6 +95,9 @@ class AsyncImageView: UIImageView {
                 
                 let image = try await AsyncImageManager.shared.downloadImageData(from: pokemonImageURL)
                 self.image = image
+                self.imageView.image = image
+                
+                self.cellStatus(shouldShowLoader: false)
                 
             } catch {
                 
@@ -70,7 +105,24 @@ class AsyncImageView: UIImageView {
             }
             
         }
+    }
+    
+    private func cellStatus(shouldShowLoader: Bool) {
         
-        
+        if shouldShowLoader {
+            
+            self.imageView.image = nil
+            self.imageView.isHidden = true
+            
+            self.loaderView.startAnimation()
+            self.loaderView.isHidden = false
+            
+        } else {
+            
+            self.loaderView.stopAnimation()
+            self.loaderView.isHidden = true
+            
+            self.imageView.isHidden = false
+        }
     }
 }

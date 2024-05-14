@@ -17,7 +17,7 @@ protocol PokemonDetailPresenterType: AnyObject {
     var pokemon: PokemonViewModel? { get set }
     
     func onPokemonDetailPresenter(on pokemonView: PokemonDetailViewControllerType)
-    func onPokemonUpdated(on pokemonInteractor: PokemonDetailInteractor, with pokemon: PokemonViewModel)
+    func didChangeFavoriteStatus(on pokemonView: PokemonDetailViewControllerType)
 }
 
 // MARK: - PokemonDetailPresenter
@@ -44,7 +44,7 @@ final class PokemonDetailPresenter {
 // MARK: - PokemonDetailPresenterType implementation
 
 extension PokemonDetailPresenter: PokemonDetailPresenterType {
-    
+
     func onPokemonDetailPresenter(on pokemonView: PokemonDetailViewControllerType) {
         
         self.view = pokemonView
@@ -52,8 +52,24 @@ extension PokemonDetailPresenter: PokemonDetailPresenterType {
         self.view?.onPokemonDetailViewControllerStart()
     }
     
-    func onPokemonUpdated(on pokemonInteractor: PokemonDetailInteractor, with pokemon: PokemonViewModel) {
+    func didChangeFavoriteStatus(on pokemonView: any PokemonDetailViewControllerType) {
         
-        
+        Task { @MainActor in
+            
+            do {
+            
+                try await self.interactor.changeFavoriteStatus()
+                
+                self.interactor.storeFavoriteStatus()
+
+                let pokemon = self.interactor.pokemon
+                self.pokemon = pokemon
+                self.view?.onPokemonFavoriteStatusChanged(with: pokemon.isFavorited)
+                
+            } catch {
+                
+                print(error.localizedDescription)
+            }
+        }
     }
 }

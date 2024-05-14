@@ -16,6 +16,7 @@ struct PokemonTypeViewModel {
 
 struct PokemonViewModel {
     
+    let id: Int
     let imageUrl: String?
     let name: String
     let height: Double
@@ -25,6 +26,12 @@ struct PokemonViewModel {
     let defense: Double
     let speed: Double
     let types: [String]
+    private(set) var isFavorited: Bool = false
+    
+    mutating func setFavoriteStatus(isFavorited: Bool) {
+        
+        self.isFavorited = isFavorited
+    }
     
     var pokemonTypes: [PokemonTypeViewModel] {
         

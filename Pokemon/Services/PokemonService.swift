@@ -10,6 +10,7 @@ import Foundation
 enum PokemonNetworkError: Error {
     
     case badURL
+    case failedToAddPokemon(with: Error)
 }
 
 protocol PokemonServiceType {
@@ -18,15 +19,17 @@ protocol PokemonServiceType {
 //    func fetchPokemons(for requestType: PokemonRequestTypes) async throws -> Pokemon
     func fetchPokemons(from pokemonModels: [PokemonModel]) async throws -> [Pokemon]
     func fetchPokemon(for pokemonName: String) async throws -> Pokemon
+    func addPokemonToFavorites(with pokemonId: Int, pokemonName: String) async throws -> Bool
+    func removePokemonFromFavorites(with pokemonId: Int, pokemonName: String) async throws -> Bool
 }
 
-class PokemonService: PokemonServiceType {
+class PokemonService: PokemonServiceType {    
 
     func fetchAllPokemonModels() async throws -> [PokemonModel] {
         
         let requestType: PokemonRequestTypes = .allPokemonModels
         
-        guard let url = requestType.url else {
+        guard let url = requestType.urlComponents.url else {
             
             throw PokemonNetworkError.badURL
         }
@@ -42,7 +45,6 @@ class PokemonService: PokemonServiceType {
         
         return pokemonModels
     }
-    
 
     func fetchPokemons(from pokemonModels: [PokemonModel]) async throws -> [Pokemon] {
         
@@ -72,7 +74,7 @@ class PokemonService: PokemonServiceType {
         
         let requestType = PokemonRequestTypes.pokemon(name: pokemonName)
         
-        guard let url = requestType.url else {
+        guard let url = requestType.urlComponents.url else {
             
             throw PokemonNetworkError.badURL
         }
@@ -81,5 +83,43 @@ class PokemonService: PokemonServiceType {
         
         let pokemon = try JSONDecoder().decode(Pokemon.self, from: data)
         return pokemon
+    }
+    
+    func addPokemonToFavorites(with pokemonId: Int, pokemonName: String) async throws -> Bool {
+        
+        try await self.changeFavoriteStatus(with: pokemonId, pokemonName: pokemonName, setTo: true)
+    }
+    
+    func removePokemonFromFavorites(with pokemonId: Int, pokemonName: String) async throws -> Bool {
+        
+        try await self.changeFavoriteStatus(with: pokemonId, pokemonName: pokemonName, setTo: false)
+    }
+    
+    private func changeFavoriteStatus(with pokemonId: Int, pokemonName: String, setTo favorite: Bool) async throws -> Bool {
+        
+        let requestType = PokemonRequestTypes.changeFavoriteStatus(pokemonId: String(pokemonId), pokemonName: pokemonName)
+        
+        let urlComponents = requestType.urlComponents
+        
+        guard let url = urlComponents.url else {
+            
+            throw PokemonNetworkError.badURL
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/x-www-form-urlencoded;charset=UTF-8", forHTTPHeaderField: "Content-Type")
+        urlRequest.httpBody = urlComponents.percentEncodedQuery?.data(using: .utf8)
+        
+        let (data, _) = try await URLSession.shared.data(for: urlRequest)
+        
+        let newStatus = favorite
+        
+        let logMessagePrefix = "Pokemon with name \(pokemonName)"
+        let logMessageSufix = newStatus ? "added to favorites successfully!": "removed from favorites successfully!"
+        
+        print("\(logMessagePrefix) \(logMessageSufix)")
+        
+        return newStatus
     }
 }

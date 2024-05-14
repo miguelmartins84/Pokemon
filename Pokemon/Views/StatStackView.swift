@@ -51,8 +51,7 @@ class StatStackView: UIStackView {
     required init(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    
+
     public func configure(with statValueText: String?, pokemonTypes: [PokemonType]? = nil) {
 
         self.statValueLabel.text = statValueText
