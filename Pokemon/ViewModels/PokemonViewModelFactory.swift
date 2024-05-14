@@ -47,6 +47,7 @@ struct PokemonViewModelFactory {
         }
         
         return PokemonViewModel(
+            id: pokemonModel.id,
             imageUrl: pokemonModel.sprites.otherSprites.officialArtwork?.frontDefault,
             name: pokemonModel.name.capitalized,
             height: pokemonModel.height,

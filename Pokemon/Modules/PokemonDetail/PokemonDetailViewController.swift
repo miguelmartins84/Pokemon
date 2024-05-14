@@ -12,6 +12,7 @@ protocol PokemonDetailViewControllerType: AnyObject {
     
     var presenter: PokemonDetailPresenterType { get set }
     func onPokemonDetailViewControllerStart()
+    func onPokemonFavoriteStatusChanged(with isFavorited: Bool)
 }
 
 // MARK: - PokemonDetailViewController
@@ -76,6 +77,12 @@ class PokemonDetailViewController: ViewController {
         
         let button = UIButton().usingAutoLayout()
         button.setImage(UIImage(systemName: "star"), for: .normal)
+        button.backgroundColor = .clear
+        button.layer.cornerRadius = 15
+        button.layer.borderWidth = 1
+        button.layer.borderColor = UIColor.accent.cgColor
+        button.backgroundColor = .white
+        button.layer.masksToBounds = true
         
         return button
     }()
@@ -218,6 +225,12 @@ class PokemonDetailViewController: ViewController {
                 
         self.view.backgroundColor = UIColor(named: "BackgroundColor")
         self.navigationItem.setHidesBackButton(false, animated: true)
+        self.favoriteButton.addTarget(self, action: #selector(self.changeFavoriteStatus), for: .touchUpInside)
+    }
+    
+    @objc func changeFavoriteStatus() {
+        
+        self.presenter.didChangeFavoriteStatus(on: self)
     }
     
     override func addSubviews() {
@@ -277,7 +290,7 @@ class PokemonDetailViewController: ViewController {
         
         NSLayoutConstraint.activate([
             
-            self.favoriteButton.topAnchor.constraint(equalTo: self.topView.topAnchor),
+            self.favoriteButton.topAnchor.constraint(equalTo: self.topView.topAnchor, constant: 8),
             self.favoriteButton.trailingAnchor.constraint(equalTo: self.topView.trailingAnchor),
             self.favoriteButton.heightAnchor.constraint(equalToConstant: 32),
             self.favoriteButton.widthAnchor.constraint(equalToConstant: 32)
@@ -325,6 +338,13 @@ class PokemonDetailViewController: ViewController {
 
 extension PokemonDetailViewController: PokemonDetailViewControllerType {
     
+    func onPokemonFavoriteStatusChanged(with isFavorited: Bool) {
+        
+        let buttonImage = isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
+        self.favoriteButton.setImage(buttonImage, for: .normal)
+    }
+    
+    
     func onPokemonDetailViewControllerStart() {
         
         guard let pokemon = self.presenter.pokemon else { return }
@@ -354,14 +374,18 @@ private extension PokemonDetailViewController {
         guard let imageUrlString = viewModel.imageUrl,
               let imageURL = URL(string: imageUrlString) else {
             
-            self.pokemonImageView.image = UIImage(named: "LogoSmall")!
+            self.pokemonImageView.setImage(image: UIImage(named: "LogoSmall")!)
             return
         }
         
         Task { @MainActor in
             
             await self.pokemonImageView.downloadImage(with: imageURL)
-            self.pokemonImageView.image = self.pokemonImageView.image
+            
+            if let image = self.pokemonImageView.image {
+             
+                self.pokemonImageView.setImage(image: image)
+            }
         }
     }
 }

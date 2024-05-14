@@ -11,20 +11,7 @@ enum PokemonRequestTypes {
     
     case allPokemonModels
     case pokemon(name: String)
-    
-    var url: URL? {
-        
-        switch self {
-            
-        case .allPokemonModels:
-            
-            return self.composeURL(path: "/api/v2/pokemon", queryItems: self.queryItems)
-            
-        case let .pokemon(name):
-            
-            return self.composeURL(path: "/api/v2/pokemon/\(name)")
-        }
-    }
+    case changeFavoriteStatus(pokemonId: String, pokemonName: String)
     
     var queryItems: [URLQueryItem]? {
         
@@ -40,23 +27,41 @@ enum PokemonRequestTypes {
         case .pokemon:
 
             return nil
+            
+        case let .changeFavoriteStatus(pokemonId, pokemonName):
+            
+            return [
+                URLQueryItem(name: "pokemonId", value: pokemonId),
+                URLQueryItem(name: "pokemonName", value: pokemonName)
+            ]
         }
     }
     
-    private func composeURL(path: String, queryItems: [URLQueryItem]? = nil) -> URL? {
+    var urlComponents: URLComponents {
+        
+        switch self {
+            
+        case .allPokemonModels:
+            return self.urlComponents(host: "pokeapi.co", path: "/api/v2/pokemon", queryItems: self.queryItems)
+            
+        case .pokemon(name: let name):
+            return self.urlComponents(host: "pokeapi.co", path: "/api/v2/pokemon/\(name)", queryItems: self.queryItems)
+            
+        case .changeFavoriteStatus:
+            return self.urlComponents(host: "webhook.site", path: "/71e25593-cf64-4201-8a60-962d44a4e71a", queryItems: self.queryItems)
+        }
+    
+    }
+    
+    private func urlComponents(host: String, path: String, queryItems: [URLQueryItem]? = nil) -> URLComponents {
         
         var urlComponents = URLComponents()
         urlComponents.scheme = "https"
-        urlComponents.host = "pokeapi.co"
+        urlComponents.host = host
         urlComponents.path = path
         
-        if let queryItems {
-            
-            urlComponents.queryItems = queryItems
-        }
-        
-        let url = urlComponents.url
-        
-        return url
+        urlComponents.queryItems = queryItems
+
+        return urlComponents
     }
 }

@@ -72,18 +72,6 @@ struct Pokemon: Codable, Hashable {
     let sprites: Sprites
     let stats: [StatModel]
     let order: Int
-    
-//    static func == (lhs: Pokemon, rhs: Pokemon) -> Bool {
-//        
-//        lhs.id == rhs.id &&
-//        lhs.name == rhs.name &&
-//        lhs.height == rhs.height &&
-//        lhs.weight == rhs.weight &&
-//        lhs.types == rhs.types &&
-//        lhs.sprites == rhs.sprites &&
-//        lhs.stats == rhs.stats &&
-//        lhs.order == rhs.order
-//    }
 }
 
 struct Stat: Codable, Hashable {

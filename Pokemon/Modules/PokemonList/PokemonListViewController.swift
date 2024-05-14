@@ -21,6 +21,8 @@ class PokemonListViewController: ViewController {
     // MARK: - Properties
     var presenter: PokemonListPresenterType
     
+    var tasksDictionary: [String: Task<Void, Never>?] = [:]
+    
     // MARK: - Views
     
     private var backgroundView: UIView = {
@@ -31,6 +33,8 @@ class PokemonListViewController: ViewController {
 
         return view
     }()
+    
+    private var loaderView: PokemonLoader = PokemonLoader().usingAutoLayout()
     
     private lazy var searchController: UISearchController = {
         
@@ -79,10 +83,11 @@ class PokemonListViewController: ViewController {
         collectionView.layer.shadowOpacity = 0.2
         collectionView.layer.shadowOffset = .zero
         collectionView.layer.shadowPath = UIBezierPath(rect: collectionView.bounds).cgPath
-        collectionView.bounces = false
         collectionView.accessibilityIdentifier = PokemonConstants.PokemonListScreen.AccessibilityIdentifiers.pokemonCollectionView
         
         collectionView.register(PokemonCellView.self,forCellWithReuseIdentifier: PokemonCellView.identifier)
+        
+        collectionView.isHidden = true
         
         return collectionView
     }()
@@ -117,12 +122,14 @@ class PokemonListViewController: ViewController {
         print("PokemonListViewController: viewDidLoad")
         
         self.presenter.onPokemonListPresenter(on: self)
+        
+        self.screenStatus(shouldShowLoader: true)
     }
     
     override func configureView() {
         
         self.title = PokemonConstants.PokemonListScreen.title
-        self.view.backgroundColor = UIColor.accent
+        self.view.backgroundColor = UIColor(named: "BackgroundColor")
         self.navigationItem.setHidesBackButton(true, animated: true)
         
         self.navigationItem.searchController = self.searchController
@@ -131,17 +138,45 @@ class PokemonListViewController: ViewController {
         
         self.pokemonCollectionView.dataSource = self
         self.pokemonCollectionView.delegate = self
-        
+
         let searchBar = self.searchController.searchBar
         searchBar.delegate = self
     }
     
     override func addSubviews() {
-
+        
+        self.backgroundView.addSubview(self.loaderView)
+        self.view.addSubview(self.backgroundView)
         self.view.addSubview(self.pokemonCollectionView)
     }
     
     override func defineConstraints() {
+        
+        // MARK: - BackgroundView
+        
+        NSLayoutConstraint.activate([
+            
+            self.backgroundView.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor,
+                                                            constant: PokemonConstants.Layout.defaultLeadingDistance),
+            self.backgroundView.leadingAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.leadingAnchor,
+                                                                constant: PokemonConstants.Layout.defaultLeadingDistance),
+            self.backgroundView.trailingAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.trailingAnchor,
+                                                                 constant: PokemonConstants.Layout.defaultTrailingDistance),
+            self.backgroundView.bottomAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.bottomAnchor,
+                                                               constant: PokemonConstants.Layout.defaultTrailingDistance)
+        ])
+        
+        // MARK: - LoaderView constraints
+        
+        NSLayoutConstraint.activate([
+        
+            self.loaderView.centerXAnchor.constraint(equalTo: self.backgroundView.centerXAnchor),
+            self.loaderView.centerYAnchor.constraint(equalTo: self.backgroundView.centerYAnchor),
+            self.loaderView.heightAnchor.constraint(equalToConstant: 48),
+            self.loaderView.widthAnchor.constraint(equalToConstant: 48)
+        ])
+        
+        // MARK: - PokemonCollectionView constraints
         
         NSLayoutConstraint.activate([
             
@@ -168,13 +203,33 @@ extension PokemonListViewController: PokemonListViewControllerType {
     
     func onFetchPokemons(on: any PokemonListPresenterType, with pokemons: [Pokemon]) {
 
+        self.screenStatus(shouldShowLoader: false)
         self.pokemonCollectionView.reloadData()
     }
 }
 
 // MARK: - Private Methods
 
-private extension PokemonListViewController {}
+private extension PokemonListViewController {
+    
+    func screenStatus(shouldShowLoader: Bool) {
+        
+        if shouldShowLoader {
+            
+            self.loaderView.startAnimation()
+            self.loaderView.isHidden = false
+            self.backgroundView.isHidden = false
+            self.pokemonCollectionView.isHidden = true
+            
+        } else {
+            
+            self.loaderView.stopAnimation()
+            self.loaderView.isHidden = true
+            self.backgroundView.isHidden = true
+            self.pokemonCollectionView.isHidden = false
+        }
+    }
+}
 
 // MARK: - UICollectionViewDataSource implementation
 
@@ -192,15 +247,32 @@ extension PokemonListViewController: UICollectionViewDataSource {
             return UICollectionViewCell()
         }
         
-        Task { @MainActor in
+        let pokemon = self.presenter.pokemons[indexPath.row]
+        
+        let task = Task { @MainActor in
 
-            let pokemon = self.presenter.pokemons[indexPath.row]
             let pokemonViewModel = PokemonViewModelFactory.createPokemonViewModel(from: pokemon)
             
+            cell.delegate = self
             await cell.configure(with: pokemonViewModel)
         }
         
+        self.tasksDictionary[pokemon.name] = task
+        
         return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PokemonCellView.identifier, for: indexPath) as? PokemonCellView else {
+            
+            return
+        }
+        
+        let pokemon = self.presenter.pokemons[indexPath.row]
+        
+        // Cancelling fetching of images on pokemon cell ensuring smoother srolling
+        self.tasksDictionary[pokemon.name]??.cancel()
     }
 }
 
@@ -257,12 +329,16 @@ extension PokemonListViewController: UICollectionViewDelegateFlowLayout {
     
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         
-        let height = scrollView.frame.height
-        let currentY = scrollView.contentOffset.y
+        let offsetY = scrollView.contentOffset.y
+        let height = scrollView.contentSize.height
+        
+        let screenHeight = scrollView.frame.size.height
+        let speedFactor: CGFloat = 300
 
-        if currentY > height - height/4 {
+        if offsetY >= height -  screenHeight - speedFactor  {
             
-            self.presenter.fetchNextPokemons(on: self)
+            print("Fetching another page")
+            self.presenter.fetchNextPokemonsOnPokemonListPresenter(on: self)
         }
     }
 }
@@ -279,7 +355,6 @@ extension PokemonListViewController: UISearchBarDelegate {
         if let searchText,
             searchText.isEmpty == false {
             
-        
             self.presenter.onPokemonListPresenter(on: self, userSearchedForText: searchText)
         }
     }
@@ -288,6 +363,14 @@ extension PokemonListViewController: UISearchBarDelegate {
         
         self.presenter.onPokemonListPresenter(on: self, userSearchedForText: "")
     }
+}
+
+// MARK: - PokemonCellViewDelegate
+
+extension PokemonListViewController: PokemonCellViewDelegate {
     
-    
+    func didTapFavoriteButton(with pokemonViewModel: PokemonViewModel) {
+        
+        self.presenter.onPokemonListPresenter(on: self, userTappedFavoriteButtonWith: pokemonViewModel)
+    }
 }

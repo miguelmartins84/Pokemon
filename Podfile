@@ -1,12 +1,12 @@
 # Uncomment the next line to define a global platform for your project
-# platform :ios, '9.0'
+platform :ios, '17.4'
 
 target 'Pokemon' do
   # Comment the next line if you don't want to use dynamic frameworks
   use_frameworks!
 
   # Pods for Pokemon
-  pod 'Realm'
+  pod 'RealmSwift', '~>10.50'
 
   target 'PokemonTests' do
     inherit! :search_paths

@@ -12,9 +12,12 @@ import Foundation
 protocol PokemonListInteractorType {
     
     var presenter: PokemonListPresenterType? { get set }
-    func fetchAllPokemonsModels() async throws
+    
+    func fetchInitialPokemons() async throws -> [Pokemon]
     func fetchNextPokemons() async throws -> [Pokemon]
     func fetchPokemons(withNamesStartingWith searchText: String) async throws -> [Pokemon]
+    func didSetFavoriteStatus(for pokemonViewModel: PokemonViewModel) async throws
+    func storeFavoriteStatus(for pokemonViewModel: PokemonViewModel)
 }
 
 // MARK: - PokemonListInteractor
@@ -22,24 +25,49 @@ protocol PokemonListInteractorType {
 final class PokemonListInteractor {
     
     weak var presenter: PokemonListPresenterType?
+    
+    private var pokemonManager: PokemonManagerType    
+    
+    init(pokemonManager: PokemonManagerType = PokemonManager.shared) {
+        
+        self.pokemonManager = pokemonManager
+    }
 }
 
 // MARK: - PokemonListInteractorType implementation
 
 extension PokemonListInteractor: PokemonListInteractorType {
     
-    func fetchAllPokemonsModels() async throws {
+    func fetchInitialPokemons() async throws -> [Pokemon] {
         
-        try await PokemonManager.shared.fetchAllPokemonsModels()
+        return try await self.pokemonManager.fetchInitialPokemons()
+
     }
     
     func fetchNextPokemons() async throws -> [Pokemon] {
         
-        return try await PokemonManager.shared.fetchNextPokemons()
+        return try await self.pokemonManager.fetchPokemons()
     }
     
     func fetchPokemons(withNamesStartingWith searchText: String) async throws -> [Pokemon] {
         
-        return try await PokemonManager.shared.fetchPokemons(withNamesStartingWith: searchText)
+        return try await self.pokemonManager.fetchPokemons(withNamesStartingWith: searchText)
+    }
+    
+    func didSetFavoriteStatus(for pokemonViewModel: PokemonViewModel) async throws {
+        
+        do {
+            
+            try await self.pokemonManager.didChangePokemonFavoriteStatus(with: pokemonViewModel.id, pokemonName: pokemonViewModel.name, isFavorite: !pokemonViewModel.isFavorited)
+            
+        } catch {
+            
+            throw PokemonNetworkError.failedToAddPokemon(with: error)
+        }
+    }
+    
+    func storeFavoriteStatus(for pokemonViewModel: PokemonViewModel) {
+        
+        self.pokemonManager.didStoreFavoriteStatus(with: pokemonViewModel.id, pokemonName: pokemonViewModel.name, isFavorite: !pokemonViewModel.isFavorited)
     }
 }
