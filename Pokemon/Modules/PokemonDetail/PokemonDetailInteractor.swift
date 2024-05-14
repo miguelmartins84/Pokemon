@@ -13,8 +13,9 @@ protocol PokemonDetailInteractorType {
     
     var presenter: PokemonDetailPresenterType? { get set }
     var pokemon: PokemonViewModel { get }
-    func changeFavoriteStatus() async throws
-    func storeFavoriteStatus()
+    
+    func onPokemonDetailInteractorDidChangeFavoriteStatus(on pokemonDetailPresenter: PokemonDetailPresenterType) async throws
+    func onPokemonDetailInteractorDidStoreFavoriteStatus(on pokemonDetailPresenter: PokemonDetailPresenterType)
 }
 
 // MARK: - PokemonInteractor
@@ -40,7 +41,7 @@ final class PokemonDetailInteractor {
 
 extension PokemonDetailInteractor: PokemonDetailInteractorType {
 
-    func changeFavoriteStatus() async throws {
+    func onPokemonDetailInteractorDidChangeFavoriteStatus(on pokemonDetailPresenter: PokemonDetailPresenterType) async throws {
         
         do {
             
@@ -52,7 +53,7 @@ extension PokemonDetailInteractor: PokemonDetailInteractorType {
         }
     }
     
-    func storeFavoriteStatus() {
+    func onPokemonDetailInteractorDidStoreFavoriteStatus(on pokemonDetailPresenter: any PokemonDetailPresenterType) {
         
         self.pokemonManager.didStoreFavoriteStatus(with: self.pokemon.id, pokemonName: self.pokemon.name, isFavorite: self.pokemon.isFavorited)
     }

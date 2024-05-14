@@ -62,7 +62,8 @@ class StatStackView: UIStackView {
         if let pokemonType = pokemonTypes.first,
            let image = UIImage(systemName: pokemonType.systemImageName) {
 
-            self.statValueLabel.addTrailing(image: image.withTintColor(pokemonType.color), text: pokemonType.type.capitalized)
+            self.statValueLabel.addTrailing(image: image.withTintColor(pokemonType.color), 
+                                            text: pokemonType.type.capitalized)
         }
     }
 }

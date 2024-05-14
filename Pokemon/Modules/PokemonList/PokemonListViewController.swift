@@ -237,7 +237,7 @@ extension PokemonListViewController: UICollectionViewDataSource {
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         
-        self.presenter.fetchNumberOfPokemonsOnPokemonListPresenter(on: self)
+        self.presenter.onPokemonListPresenterFetchNumberOfPokemons(on: self)
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -281,7 +281,7 @@ extension PokemonListViewController: UICollectionViewDataSourcePrefetching {
         
         Task { @MainActor in
         
-            await self.presenter.fetchImages(for: rows, isInitialFetch: false)
+            await self.presenter.onPokemonListPresenter(on: self, fetchImagesfor: rows, isInitialFetch: false)
         }
     }
 }
@@ -333,9 +333,8 @@ extension PokemonListViewController: UICollectionViewDelegateFlowLayout {
         let speedFactor: CGFloat = 300
 
         if offsetY >= height -  screenHeight - speedFactor  {
-            
-            print("Fetching another page")
-            self.presenter.fetchNextPokemonsOnPokemonListPresenter(on: self)
+
+            self.presenter.onPokemonListPresenterFetchNextPokemons(on: self)
         }
     }
 }
@@ -375,11 +374,6 @@ extension PokemonListViewController: UISearchBarDelegate {
             
             self.presenter.onPokemonListPresenter(on: self, userSearchedForText: searchText)
         }
-    }
-    
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        
-        print("User wants to search")
     }
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {

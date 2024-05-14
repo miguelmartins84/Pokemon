@@ -7,7 +7,6 @@
 
 import RealmSwift
 
-
 // MARK: - FavoritePokemonsDataManagerType definition
 
 protocol FavoritePokemonsDataManagerType: AnyObject {

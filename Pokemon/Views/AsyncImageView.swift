@@ -10,8 +10,7 @@ import UIKit
 class AsyncImageView: UIView {
     
     var pokemonImageURL: URL?
-    
-    private var asyncImageManager: AsyncImageManagerType
+
     private var loaderView: PokemonLoader = PokemonLoader().usingAutoLayout()
     
     private var imageView: UIImageView = {
@@ -23,12 +22,9 @@ class AsyncImageView: UIView {
         return imageView
     }()
     
-    init(
-        pokemonImageURL: URL? = nil,
-        asyncImageManager: AsyncImageManagerType = AsyncImageManager.shared
-    ) {
+    init(pokemonImageURL: URL? = nil) {
+            
         self.pokemonImageURL = pokemonImageURL
-        self.asyncImageManager = asyncImageManager
         
         super.init(frame: .zero)
         
@@ -60,8 +56,8 @@ class AsyncImageView: UIView {
         
             self.loaderView.centerXAnchor.constraint(equalTo: self.centerXAnchor),
             self.loaderView.centerYAnchor.constraint(equalTo: self.centerYAnchor),
-            self.loaderView.heightAnchor.constraint(equalToConstant: 48),
-            self.loaderView.widthAnchor.constraint(equalToConstant: 48)
+            self.loaderView.heightAnchor.constraint(equalToConstant: PokemonConstants.PokemonLoader.loaderSize),
+            self.loaderView.widthAnchor.constraint(equalToConstant: PokemonConstants.PokemonLoader.loaderSize)
         ])
         
         // MARK: - ImageView constraints

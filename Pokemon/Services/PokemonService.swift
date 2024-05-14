@@ -16,7 +16,6 @@ enum PokemonNetworkError: Error {
 protocol PokemonServiceType {
     
     func fetchAllPokemonModels() async throws -> [PokemonModel]
-//    func fetchPokemons(for requestType: PokemonRequestTypes) async throws -> Pokemon
     func fetchPokemons(from pokemonModels: [PokemonModel]) async throws -> [Pokemon]
     func fetchPokemon(for pokemonName: String) async throws -> Pokemon
     func addPokemonToFavorites(with pokemonId: Int, pokemonName: String) async throws -> Bool
@@ -112,7 +111,7 @@ class PokemonService: PokemonServiceType {
         urlRequest.httpBody = urlComponents.percentEncodedQuery?.data(using: .utf8)
         
         let (_, _) = try await URLSession.shared.data(for: urlRequest)
-        
+
         let newStatus = favorite
         
         let logMessagePrefix = "Pokemon with name \(pokemonName)"

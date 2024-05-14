@@ -11,6 +11,8 @@ import Foundation
 
 protocol PokemonManagerType {
     
+    var favoritePokemons: Set<Int> { get }
+    
     func fetchInitialPokemons() async throws -> [Pokemon]
     func fetchPokemons() async throws -> [Pokemon]
     func fetchPokemons(withNamesStartingWith searchText: String) async throws -> [Pokemon]
@@ -34,7 +36,8 @@ class PokemonManager {
     private var allFetchedPokemonsModelsDictionary: [String: PokemonModel] = [:]
     private var allFetchedPokemonsDictionary: [String: Pokemon] = [:]
     private var currentFetchedPokemonsDictionary: [Int: Pokemon] = [:]
-    private var favoritePokemons: Set<Int> = []
+    
+    var favoritePokemons: Set<Int> = []
     
     // Stores the ordered pokemon models and all the already fetched pokemons
     private var allPokemonsModels: [PokemonModel] = []
@@ -76,7 +79,9 @@ extension PokemonManager: PokemonManagerType {
             self.allFetchedPokemonsModelsDictionary[pokemonModel.name] = pokemonModel
         }
         
-        let initialPokemonModels = Array(self.allPokemonsModels[0 ..< self.limit])
+        let limit = self.allPokemonsModels.count < self.limit ? self.allPokemonsModels.count : self.limit
+        
+        let initialPokemonModels = Array(self.allPokemonsModels[0 ..< limit])
                 
         try await self.loadPokemons(from: initialPokemonModels)
         
@@ -95,6 +100,8 @@ extension PokemonManager: PokemonManagerType {
         let currentFetchedPages = self.isInSearchContext ? self.refinedFetchedPages : self.allFetchedPages
         let currentPokemons = self.isInSearchContext ? self.refinedPokemons : self.allFetchedPokemons
         let offset = self.isInSearchContext ? self.refinedOffset : self.allOffset
+        
+        let limit = self.allPokemonsModels.count < self.limit ? self.allPokemonsModels.count : self.limit
         
         let numberOfPages = currentPokemonsModels.count / limit
         
@@ -194,7 +201,6 @@ extension PokemonManager: PokemonManagerType {
         
         self.favoritePokemons.contains(pokemonId)
     }
-    
     
     func didStoreFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool) {
         

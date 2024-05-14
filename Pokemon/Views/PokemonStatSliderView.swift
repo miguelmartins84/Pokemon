@@ -13,12 +13,8 @@ class PokemonStatSliderView: UISlider {
 
         super.init(frame: .zero)
         
-        self.minimumValue = 0
-        self.maximumValue = 200
-        
-        
-        //"timer.circle"
-        //"timer.circle.fill"
+        self.minimumValue = .zero
+        self.maximumValue = PokemonConstants.PokemonStatSlider.maximumValue
         self.isUserInteractionEnabled = false
         self.thumbTintColor = .white
     }
@@ -33,11 +29,11 @@ class PokemonStatSliderView: UISlider {
         
         self.value = statValue
         
-        if statValue < 65 {
+        if statValue < PokemonConstants.PokemonStatSlider.lowerBound {
             
             self.minimumTrackTintColor = .systemRed
             
-        } else if statValue >= 65 && statValue < 140 {
+        } else if statValue >= PokemonConstants.PokemonStatSlider.lowerBound && statValue < PokemonConstants.PokemonStatSlider.mediumBound {
             
             self.minimumTrackTintColor = .systemYellow
 
@@ -50,17 +46,3 @@ class PokemonStatSliderView: UISlider {
         self.maximumValueImage = UIImage(systemName: maximumValueImageName)
     }
 }
-//
-//
-//private var slider: UISlider = {
-//    
-//    let slider = UISlider().usingAutoLayout()
-//    slider.minimumValue = 0
-//    slider.maximumValue = 100
-//    slider.minimumTrackTintColor = .systemBlue
-////        slider.maximumTrackTintColor = .systemRed
-//    slider.thumbTintColor = .systemGreen
-//    slider.value = 15
-//
-//    return slider
-//}()
