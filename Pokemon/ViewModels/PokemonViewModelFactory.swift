@@ -31,7 +31,7 @@ struct PokemonViewModelFactory {
             case "defense":
                 defense = value
                 
-            case "spped":
+            case "speed":
                 speed = value
                 
             default:

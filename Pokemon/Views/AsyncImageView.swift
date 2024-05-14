@@ -10,10 +10,8 @@ import UIKit
 class AsyncImageView: UIView {
     
     var pokemonImageURL: URL?
+    
     private var asyncImageManager: AsyncImageManagerType
-    
-    private(set) var image: UIImage?
-    
     private var loaderView: PokemonLoader = PokemonLoader().usingAutoLayout()
     
     private var imageView: UIImageView = {
@@ -77,36 +75,16 @@ class AsyncImageView: UIView {
     }
     
     func setImage(image: UIImage) {
-
-        self.image = nil
-        self.image = image
+  
         self.imageView.image = image
+        self.cellStatus(shouldShowLoader: false)
     }
     
-    func downloadImage(with pokemonImageURL: URL) async {
+    func showLoader() {
         
-        self.cellStatus(shouldShowLoader: true)
-        
-        self.pokemonImageURL = pokemonImageURL
-        
-        Task { @MainActor in
+        cellStatus(shouldShowLoader: true)
+    }
 
-            do {
-                
-                let image = try await AsyncImageManager.shared.downloadImageData(from: pokemonImageURL)
-                self.image = image
-                self.imageView.image = image
-                
-                self.cellStatus(shouldShowLoader: false)
-                
-            } catch {
-                
-                throw error
-            }
-            
-        }
-    }
-    
     private func cellStatus(shouldShowLoader: Bool) {
         
         if shouldShowLoader {

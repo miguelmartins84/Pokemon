@@ -111,7 +111,7 @@ class PokemonService: PokemonServiceType {
         urlRequest.setValue("application/x-www-form-urlencoded;charset=UTF-8", forHTTPHeaderField: "Content-Type")
         urlRequest.httpBody = urlComponents.percentEncodedQuery?.data(using: .utf8)
         
-        let (data, _) = try await URLSession.shared.data(for: urlRequest)
+        let (_, _) = try await URLSession.shared.data(for: urlRequest)
         
         let newStatus = favorite
         

@@ -18,7 +18,9 @@ class PokemonCellView: UICollectionViewCell {
     
     weak var delegate: PokemonCellViewDelegate?
     
-    private var pokemonViewModel: PokemonViewModel?
+    var pokemonViewModel: PokemonViewModel?
+    var imageURL: String?
+    var image: UIImage?
     
     private var pokemonImageView: AsyncImageView = {
         
@@ -49,9 +51,12 @@ class PokemonCellView: UICollectionViewCell {
         button.layer.borderColor = UIColor.accent.cgColor
         button.backgroundColor = .white
         button.layer.masksToBounds = true
-        
+        button.isHidden = true
+
         return button
     }()
+    
+    private var taskHandler: Task<Void, Never>?
     
     override init(frame: CGRect) {
         
@@ -109,32 +114,30 @@ class PokemonCellView: UICollectionViewCell {
         ])
     }
     
-    func configure(with viewModel: PokemonViewModel) async {
+    func configure(with viewModel: PokemonViewModel) {
         
         self.pokemonViewModel = viewModel
         
-        guard let imageUrlString = viewModel.imageUrl,
-              let imageURL = URL(string: imageUrlString) else {
-
-            self.pokemonImageView.setImage(image: UIImage(named: "LogoSmall")!)
-            self.pokemonNamelabel.text = viewModel.name
-            
-            return
-        }
+        self.pokemonNamelabel.text = viewModel.name
+        let buttonImage = viewModel.isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
+        self.favoriteButton.setImage(buttonImage, for: .normal)
+        self.favoriteButton.isHidden = false
         
-        Task { @MainActor in
+        if viewModel.imageUrl == nil,
+           let image = UIImage(named: "LogoSmall") {
+                
+            self.pokemonImageView.setImage(image: image)
             
-            await self.pokemonImageView.downloadImage(with: imageURL)
+        } else if viewModel.image == nil {
             
-            if let image = self.pokemonImageView.image {
+            self.pokemonImageView.showLoader()
             
-                self.pokemonImageView.setImage(image: image)
-            }
+        } else if let image = viewModel.image {
             
-            self.pokemonNamelabel.text = viewModel.name
-        }        
+            self.pokemonImageView.setImage(image: image)
+        }
     }
-    
+   
     @objc func didTapFavoriteButton() {
         
         guard let pokemonViewModel = self.pokemonViewModel else {

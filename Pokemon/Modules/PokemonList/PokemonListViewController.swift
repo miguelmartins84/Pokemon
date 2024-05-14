@@ -11,7 +11,7 @@ import UIKit
 protocol PokemonListViewControllerType: AnyObject {
     
     var presenter: PokemonListPresenterType { get set }
-    func onFetchPokemons(on: PokemonListPresenterType, with pokemons: [Pokemon])
+    func onFetchPokemons(on: PokemonListPresenterType, with pokemonViewModels: [PokemonViewModel])
 }
 
 // MARK: - PokemonListViewController
@@ -20,8 +20,6 @@ class PokemonListViewController: ViewController {
     
     // MARK: - Properties
     var presenter: PokemonListPresenterType
-    
-    var tasksDictionary: [String: Task<Void, Never>?] = [:]
     
     // MARK: - Views
     
@@ -138,7 +136,9 @@ class PokemonListViewController: ViewController {
         
         self.pokemonCollectionView.dataSource = self
         self.pokemonCollectionView.delegate = self
+        self.pokemonCollectionView.prefetchDataSource = self
 
+        self.searchController.searchResultsUpdater = self
         let searchBar = self.searchController.searchBar
         searchBar.delegate = self
     }
@@ -201,8 +201,8 @@ class PokemonListViewController: ViewController {
 
 extension PokemonListViewController: PokemonListViewControllerType {
     
-    func onFetchPokemons(on: any PokemonListPresenterType, with pokemons: [Pokemon]) {
-
+    func onFetchPokemons(on: any PokemonListPresenterType, with pokemonViewModels: [PokemonViewModel]) {
+        
         self.screenStatus(shouldShowLoader: false)
         self.pokemonCollectionView.reloadData()
     }
@@ -237,7 +237,7 @@ extension PokemonListViewController: UICollectionViewDataSource {
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         
-        self.presenter.pokemons.count
+        self.presenter.fetchNumberOfPokemonsOnPokemonListPresenter(on: self)
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -247,45 +247,42 @@ extension PokemonListViewController: UICollectionViewDataSource {
             return UICollectionViewCell()
         }
         
-        let pokemon = self.presenter.pokemons[indexPath.row]
+        if let pokemonViewModel = self.presenter.onPokemonListPresenter(on: self, fetchPokemonViewModelFor: indexPath.row) {
         
-        let task = Task { @MainActor in
-
-            let pokemonViewModel = PokemonViewModelFactory.createPokemonViewModel(from: pokemon)
-            
             cell.delegate = self
-            await cell.configure(with: pokemonViewModel)
+            cell.configure(with: pokemonViewModel)
         }
-        
-        self.tasksDictionary[pokemon.name] = task
         
         return cell
     }
-    
-    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
-        
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PokemonCellView.identifier, for: indexPath) as? PokemonCellView else {
-            
-            return
-        }
-        
-        let pokemon = self.presenter.pokemons[indexPath.row]
-        
-        // Cancelling fetching of images on pokemon cell ensuring smoother srolling
-        self.tasksDictionary[pokemon.name]??.cancel()
-    }
 }
+
 
 // MARK: - UICollectionViewDelegate implementation
 
 extension PokemonListViewController: UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-
-        let pokemon = self.presenter.pokemons[indexPath.row]
-        let pokemonViewModel = PokemonViewModelFactory.createPokemonViewModel(from: pokemon)
         
-        self.presenter.onPokemonListPresenter(on: self, pokemonCellTappedWith: pokemonViewModel)
+        if let pokemonViewModel = self.presenter.onPokemonListPresenter(on: self, fetchPokemonViewModelFor: indexPath.row) {
+        
+            self.presenter.onPokemonListPresenter(on: self, pokemonCellTappedWith: pokemonViewModel)
+        }
+    }
+}
+
+// MARK: - UICollectionViewDataSourcePrefetching implementation
+
+extension PokemonListViewController: UICollectionViewDataSourcePrefetching {
+    
+    func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+        
+        let rows = indexPaths.map { $0.row }
+        
+        Task { @MainActor in
+        
+            await self.presenter.fetchImages(for: rows, isInitialFetch: false)
+        }
     }
 }
 
@@ -345,9 +342,9 @@ extension PokemonListViewController: UICollectionViewDelegateFlowLayout {
 
 // MARK: - UISearchResultsUpdating implementation
 
-extension PokemonListViewController: UISearchBarDelegate {
+extension PokemonListViewController: UISearchResultsUpdating {
     
-    func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
+    func updateSearchResults(for searchController: UISearchController) {
         
         let searchText = searchController.searchBar.text
         print(searchText ?? "")
@@ -358,10 +355,41 @@ extension PokemonListViewController: UISearchBarDelegate {
             self.presenter.onPokemonListPresenter(on: self, userSearchedForText: searchText)
         }
     }
+}
+
+extension PokemonListViewController: UISearchBarDelegate {
+    
+    func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
+        
+        let searchText = searchController.searchBar.text
+
+        print(searchText ?? "")
+        
+        if self.pokemonCollectionView.numberOfItems(inSection: 0) > 0 {
+            
+            self.pokemonCollectionView.scrollToItem(at: IndexPath(row: 0, section: 0), at: .top, animated: true)
+        }
+        
+        if let searchText,
+            searchText.isEmpty == false {
+            
+            self.presenter.onPokemonListPresenter(on: self, userSearchedForText: searchText)
+        }
+    }
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+        print("User wants to search")
+    }
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         
         self.presenter.onPokemonListPresenter(on: self, userSearchedForText: "")
+
+        if self.pokemonCollectionView.numberOfItems(inSection: 0) > 0 {
+            
+            self.pokemonCollectionView.scrollToItem(at: IndexPath(row: 0, section: 0), at: .top, animated: true)
+        }
     }
 }
 

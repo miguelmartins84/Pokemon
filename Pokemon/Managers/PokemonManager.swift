@@ -15,6 +15,7 @@ protocol PokemonManagerType {
     func fetchPokemons() async throws -> [Pokemon]
     func fetchPokemons(withNamesStartingWith searchText: String) async throws -> [Pokemon]
     func didChangePokemonFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool) async throws -> Bool
+    func fetchFavoriteStatus(for pokemonId: Int) -> Bool
     func didStoreFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool)
 }
 
@@ -33,6 +34,7 @@ class PokemonManager {
     private var allFetchedPokemonsModelsDictionary: [String: PokemonModel] = [:]
     private var allFetchedPokemonsDictionary: [String: Pokemon] = [:]
     private var currentFetchedPokemonsDictionary: [Int: Pokemon] = [:]
+    private var favoritePokemons: Set<Int> = []
     
     // Stores the ordered pokemon models and all the already fetched pokemons
     private var allPokemonsModels: [PokemonModel] = []
@@ -48,22 +50,7 @@ class PokemonManager {
     
     private var isInSearchContext: Bool = false
 
-    private let limit = 20
-    
-//    private lazy var currentPokemonsModels: [PokemonModel] = {
-//        
-//        self.isInSearchContext ? self.refinedPokemonsModels : self.allPokemonsModels
-//    }()
-    
-//    private lazy var currentPokemons: [Pokemon] = {
-//        
-//        self.isInSearchContext ? self.refinedPokemons: self.allFetchedPokemons
-//    }()
-//    
-//    private lazy var currentFetchedPages: Set<Int> = {
-//        
-//        self.isInSearchContext ? self.refinedFetchedPages : self.fetchedPages
-//    }()
+    private let limit = 60
 
     init(
         pokemonService: PokemonServiceType = PokemonService(),
@@ -72,51 +59,14 @@ class PokemonManager {
         
         self.pokemonService = pokemonService
         self.favoritePokemonsDataManager = favoritePokemonsDataManager
-    }
-}
-
-// MARK: - Private Methods
-
-private extension PokemonManager {
- 
-    func appendPokemons(with pokemons: [Pokemon]) {
-        
-//        for pokemon in pokemons {
-//            
-//            if self.fetchedPokemonsDictionary[pokemon.name] == nil {
-//                
-//                self.fetchedPokemonsDictionary[pokemon.name] = pokemon
-//            }
-//        }
-
-        if self.isInSearchContext {
-            
-            self.refinedPokemons.append(contentsOf: pokemons)
-        }
-        
-//        self.isInSearchContext ?  : self.allFetchedPokemons.append(contentsOf: pokemons)
-    }
-    
-    func clearState(isSearch: Bool) {
-        
-        if isSearch {
-            
-            self.isInSearchContext = true
-            self.refinedOffset = 0
-            self.refinedPokemons = []
-            self.refinedFetchedPages = []
-            
-        } else {
-            
-            self.isInSearchContext = false
-        }
+        self.fetchFavoritePokemons()
     }
 }
 
 // MARK: - PokemonManagerType Implementation
 
 extension PokemonManager: PokemonManagerType {
-    
+
     func fetchInitialPokemons() async throws -> [Pokemon] {
         
         let pokemonModels = try await self.pokemonService.fetchAllPokemonModels()
@@ -138,57 +88,6 @@ extension PokemonManager: PokemonManagerType {
 
         return self.allFetchedPokemons
     }
-    
-    private func getSortedPokemonsFromCurrentlyFetched() -> [Pokemon] {
-        
-        var currentFetchedPokemons: [Pokemon] = []
-        
-        let keys = self.currentFetchedPokemonsDictionary.keys.sorted()
-        
-        for key in keys {
-            
-            if let pokemon = self.currentFetchedPokemonsDictionary[key] {
-                
-                currentFetchedPokemons.append(pokemon)
-            }
-        }
-        
-        return currentFetchedPokemons
-    }
-
-    private func loadPokemons(from pokemonModels: [PokemonModel]) async throws {
-        
-        self.currentFetchedPokemonsDictionary = [:]
-        
-        return try await withThrowingTaskGroup(of: Pokemon.self) { group in
-            
-            for pokemonModel in pokemonModels {
-                
-                group.addTask {
-                    
-                    let pokemonName = pokemonModel.name
-                    
-                    let pokemon = try await self.pokemonService.fetchPokemon(for: pokemonName)
-                    return pokemon
-                }
-            }
-            
-            for try await fetchedPokemon in group {
-
-                self.currentFetchedPokemonsDictionary[fetchedPokemon.id] = fetchedPokemon
-            }
-        }
-    }
-    
-//    func fetchAllPokemonModels() async throws {
-//        
-//        let pokemonsModels = try await self.pokemonService.fetchAllPokemonModels()
-//        self.allPokemonsModels = pokemonsModels.sorted(by: { $0.name < $1.name })
-//        self.allPokemonsModels.forEach { pokemonModel in
-//            
-//            self.fetchedPokemonsModelsDictionary[pokemonModel.name] = pokemonModel
-//        }
-//    }
     
     func fetchPokemons() async throws -> [Pokemon] {
         
@@ -281,6 +180,22 @@ extension PokemonManager: PokemonManagerType {
         }
     }
     
+    func fetchFavoritePokemons(){
+        
+        let favorites = self.favoritePokemonsDataManager.getFavorites()
+        
+        favorites.forEach { favoritePokemonDataModel in
+            
+            self.favoritePokemons.insert(favoritePokemonDataModel.id)
+        }
+    }
+    
+    func fetchFavoriteStatus(for pokemonId: Int) -> Bool {
+        
+        self.favoritePokemons.contains(pokemonId)
+    }
+    
+    
     func didStoreFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool) {
         
         let favoritePokemon = FavoritePokemonDataModel()
@@ -290,10 +205,11 @@ extension PokemonManager: PokemonManagerType {
         if isFavorite == true {
             
             self.favoritePokemonsDataManager.addToFavorites(favoritePokemonDataModel: favoritePokemon)
-            
+            self.favoritePokemons.insert(favoritePokemon.id)
         } else {
             
             self.favoritePokemonsDataManager.removeFromFavorites(favoritePokemonDataModel: favoritePokemon)
+            self.favoritePokemons.remove(favoritePokemon.id)
         }
     }
     
@@ -301,15 +217,72 @@ extension PokemonManager: PokemonManagerType {
         
         if isFavorite == true {
             
-            let favoriteStatus = try await self.pokemonService.addPokemonToFavorites(with: pokemonId, pokemonName: pokemonName)
+            return try await self.pokemonService.addPokemonToFavorites(with: pokemonId, pokemonName: pokemonName)
 
-            
-            return favoriteStatus
         } else {
             
-            let favoriteStatus = try await self.pokemonService.removePokemonFromFavorites(with: pokemonId, pokemonName: pokemonName)
-            
-            return favoriteStatus
+            return try await self.pokemonService.removePokemonFromFavorites(with: pokemonId, pokemonName: pokemonName)
         }
+    }
+}
+
+// MARK: - Private Methods
+
+private extension PokemonManager {
+    
+    func clearState(isSearch: Bool) {
+        
+        if isSearch {
+            
+            self.isInSearchContext = true
+            self.refinedOffset = 0
+            self.refinedPokemons = []
+            self.refinedFetchedPages = []
+            
+        } else {
+            
+            self.isInSearchContext = false
+        }
+    }
+    
+    func loadPokemons(from pokemonModels: [PokemonModel]) async throws {
+        
+        self.currentFetchedPokemonsDictionary = [:]
+        
+        return try await withThrowingTaskGroup(of: Pokemon.self) { group in
+            
+            for pokemonModel in pokemonModels {
+                
+                group.addTask {
+                    
+                    let pokemonName = pokemonModel.name
+                    
+                    let pokemon = try await self.pokemonService.fetchPokemon(for: pokemonName)
+                    return pokemon
+                }
+            }
+            
+            for try await fetchedPokemon in group {
+
+                self.currentFetchedPokemonsDictionary[fetchedPokemon.id] = fetchedPokemon
+            }
+        }
+    }
+    
+    func getSortedPokemonsFromCurrentlyFetched() -> [Pokemon] {
+        
+        var currentFetchedPokemons: [Pokemon] = []
+        
+        let keys = self.currentFetchedPokemonsDictionary.keys.sorted()
+        
+        for key in keys {
+            
+            if let pokemon = self.currentFetchedPokemonsDictionary[key] {
+                
+                currentFetchedPokemons.append(pokemon)
+            }
+        }
+        
+        return currentFetchedPokemons
     }
 }
