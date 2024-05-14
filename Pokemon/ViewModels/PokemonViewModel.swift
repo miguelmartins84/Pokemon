@@ -26,11 +26,17 @@ struct PokemonViewModel {
     let defense: Double
     let speed: Double
     let types: [String]
+    private(set) var image: UIImage?
     private(set) var isFavorited: Bool = false
     
     mutating func setFavoriteStatus(isFavorited: Bool) {
         
         self.isFavorited = isFavorited
+    }
+    
+    mutating func setImage(with image: UIImage) {
+        
+        self.image = image
     }
     
     var pokemonTypes: [PokemonTypeViewModel] {
@@ -74,7 +80,7 @@ struct PokemonViewModel {
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.fire.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "fire.circle.fill", color: .systemOrange)
+                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "flame.circle.fill", color: .systemOrange)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.water.rawValue.capitalized:

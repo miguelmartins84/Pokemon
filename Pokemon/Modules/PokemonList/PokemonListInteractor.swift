@@ -5,7 +5,7 @@
 //  Created by Miguel Martins on 04/05/2024.
 //
 
-import Foundation
+import UIKit
 
 // MARK: - PokemonListInteractorType
 
@@ -16,8 +16,10 @@ protocol PokemonListInteractorType {
     func fetchInitialPokemons() async throws -> [Pokemon]
     func fetchNextPokemons() async throws -> [Pokemon]
     func fetchPokemons(withNamesStartingWith searchText: String) async throws -> [Pokemon]
-    func didSetFavoriteStatus(for pokemonViewModel: PokemonViewModel) async throws
-    func storeFavoriteStatus(for pokemonViewModel: PokemonViewModel)
+    func fetchFavoriteStatus(pokemonId: Int) -> Bool
+    func didSetFavoriteStatus(pokemonId: Int, pokemonName: String) async throws -> Bool
+    func storeFavoriteStatus(pokemonId: Int, pokemonName: String)
+    func fetchImages(of imageUrlModels: [PokemonImageUrlModel]) async throws -> [PokemonImageModel]
 }
 
 // MARK: - PokemonListInteractor
@@ -41,7 +43,6 @@ extension PokemonListInteractor: PokemonListInteractorType {
     func fetchInitialPokemons() async throws -> [Pokemon] {
         
         return try await self.pokemonManager.fetchInitialPokemons()
-
     }
     
     func fetchNextPokemons() async throws -> [Pokemon] {
@@ -54,11 +55,16 @@ extension PokemonListInteractor: PokemonListInteractorType {
         return try await self.pokemonManager.fetchPokemons(withNamesStartingWith: searchText)
     }
     
-    func didSetFavoriteStatus(for pokemonViewModel: PokemonViewModel) async throws {
+    func fetchFavoriteStatus(pokemonId: Int) -> Bool {
+        
+        self.pokemonManager.fetchFavoriteStatus(for: pokemonId)
+    }
+    
+    func didSetFavoriteStatus(pokemonId: Int, pokemonName: String) async throws -> Bool {
         
         do {
-            
-            try await self.pokemonManager.didChangePokemonFavoriteStatus(with: pokemonViewModel.id, pokemonName: pokemonViewModel.name, isFavorite: !pokemonViewModel.isFavorited)
+            let favoriteStatus = self.pokemonManager.fetchFavoriteStatus(for: pokemonId)
+            return try await self.pokemonManager.didChangePokemonFavoriteStatus(with: pokemonId, pokemonName: pokemonName, isFavorite: !favoriteStatus)
             
         } catch {
             
@@ -66,8 +72,34 @@ extension PokemonListInteractor: PokemonListInteractorType {
         }
     }
     
-    func storeFavoriteStatus(for pokemonViewModel: PokemonViewModel) {
+    func storeFavoriteStatus(pokemonId: Int, pokemonName: String) {
         
-        self.pokemonManager.didStoreFavoriteStatus(with: pokemonViewModel.id, pokemonName: pokemonViewModel.name, isFavorite: !pokemonViewModel.isFavorited)
+        let favoriteStatus = self.pokemonManager.fetchFavoriteStatus(for: pokemonId)
+        self.pokemonManager.didStoreFavoriteStatus(with: pokemonId, pokemonName: pokemonName, isFavorite: !favoriteStatus)
+    }
+    
+    func fetchImages(of imageUrlModels: [PokemonImageUrlModel]) async throws -> [PokemonImageModel] {
+        
+        return try await withThrowingTaskGroup(of: PokemonImageModel.self) { group in
+            
+            for imageUrlModel in imageUrlModels {
+                
+                group.addTask {
+                    
+                    let image = try await AsyncImageManager.shared.downloadImageData(from: imageUrlModel.imageUrl)
+                    return PokemonImageModel(row: imageUrlModel.row, image: image)
+                }
+            }
+            
+            var fetchedImages: [PokemonImageModel] = []
+            
+            for try await fetchedImageModel in group {
+
+                let pokemonImageModel = PokemonImageModel(row: fetchedImageModel.row, image: fetchedImageModel.image)
+                fetchedImages.append(pokemonImageModel)
+            }
+            
+            return fetchedImages
+        }
     }
 }

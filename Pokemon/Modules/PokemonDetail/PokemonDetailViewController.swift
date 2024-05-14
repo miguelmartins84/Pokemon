@@ -122,6 +122,18 @@ class PokemonDetailViewController: ViewController {
     private var heightStatStackView: StatStackView = StatStackView(statLabelText: "Height").usingAutoLayout()
     private var typeStatStackView: StatStackView = StatStackView(statLabelText: "Type").usingAutoLayout()
 
+    private var slidersStackView: UIStackView = {
+        
+        let stackView = UIStackView().usingAutoLayout()
+        stackView.backgroundColor = .clear
+        stackView.contentMode = .center
+        stackView.axis = .vertical
+        stackView.spacing = 0
+        stackView.distribution = .fillEqually
+
+        return stackView
+    }()
+    
     private var speedLabel: UILabel = {
        
         let titleLabel = UILabel().usingAutoLayout()
@@ -133,15 +145,7 @@ class PokemonDetailViewController: ViewController {
         return titleLabel
     }()
     
-    private var speedValueLabel: UILabel = {
-       
-        let titleLabel = UILabel().usingAutoLayout()
-        titleLabel.font = UIFont.pokemonRegularText
-        titleLabel.textColor = .black
-        titleLabel.textAlignment = .center
-        
-        return titleLabel
-    }()
+    private var speedSlider: PokemonStatSliderView = PokemonStatSliderView().usingAutoLayout()
     
     private var attackLabel: UILabel = {
        
@@ -153,16 +157,8 @@ class PokemonDetailViewController: ViewController {
 
         return titleLabel
     }()
-    
-    private var attackValueLabel: UILabel = {
-       
-        let titleLabel = UILabel().usingAutoLayout()
-        titleLabel.font = UIFont.pokemonRegularText
-        titleLabel.textColor = .black
-        titleLabel.textAlignment = .center
-        
-        return titleLabel
-    }()
+
+    private var attackSlider: PokemonStatSliderView = PokemonStatSliderView().usingAutoLayout()
     
     private var defenseLabel: UILabel = {
        
@@ -175,29 +171,8 @@ class PokemonDetailViewController: ViewController {
         return titleLabel
     }()
     
-    private var defenseValueLabel: UILabel = {
-       
-        let titleLabel = UILabel().usingAutoLayout()
-        titleLabel.font = UIFont.pokemonRegularText
-        titleLabel.textColor = .black
-        titleLabel.textAlignment = .center
-        
-        return titleLabel
-    }()
-    
-    private var slider: UISlider = {
-        
-        let slider = UISlider().usingAutoLayout()
-        slider.minimumValue = 0
-        slider.maximumValue = 100
-        slider.minimumTrackTintColor = .systemBlue
-//        slider.maximumTrackTintColor = .systemRed
-        slider.thumbTintColor = .systemGreen
-        slider.value = 15
+    private var defenseSlider: PokemonStatSliderView = PokemonStatSliderView().usingAutoLayout()
 
-        return slider
-    }()
-    
     
     // MARK: - Initializer
     init(presenter: PokemonDetailPresenterType) {
@@ -243,7 +218,9 @@ class PokemonDetailViewController: ViewController {
         self.statsView.addSubview(self.titleLabel)
         self.statsView.addSubview(self.typeStatStackView)
         self.statsView.addSubview(self.mainStatsStackView)
-        self.statsView.addSubview(self.slider)
+        
+        self.slidersStackView.addArrangedSubviews([self.speedLabel, self.speedSlider, self.attackLabel, self.attackSlider, self.defenseLabel, self.defenseSlider])
+        self.statsView.addSubview(self.slidersStackView)
         
         self.scrollContentStackView.addArrangedSubviews([self.topView, self.statsView])
         
@@ -324,12 +301,13 @@ class PokemonDetailViewController: ViewController {
             self.mainStatsStackView.trailingAnchor.constraint(equalTo: self.statsView.trailingAnchor, constant: -32)
         ])
         
+        // MARK: - SlidersStackView constraints
+        
         NSLayoutConstraint.activate([
-
-            self.slider.topAnchor.constraint(equalTo: self.mainStatsStackView.bottomAnchor, constant: 16),
-            self.slider.leadingAnchor.constraint(equalTo: self.mainStatsStackView.leadingAnchor, constant: 16),
-            self.slider.trailingAnchor.constraint(equalTo: self.mainStatsStackView.trailingAnchor, constant: -16),
-            self.slider.heightAnchor.constraint(equalToConstant: 50)
+            
+            self.slidersStackView.topAnchor.constraint(equalTo: self.mainStatsStackView.bottomAnchor, constant: 32),
+            self.slidersStackView.leadingAnchor.constraint(equalTo: self.statsView.leadingAnchor, constant: 32),
+            self.slidersStackView.trailingAnchor.constraint(equalTo: self.statsView.trailingAnchor, constant: -32)
         ])
     }
 }
@@ -343,8 +321,7 @@ extension PokemonDetailViewController: PokemonDetailViewControllerType {
         let buttonImage = isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
         self.favoriteButton.setImage(buttonImage, for: .normal)
     }
-    
-    
+
     func onPokemonDetailViewControllerStart() {
         
         guard let pokemon = self.presenter.pokemon else { return }
@@ -357,9 +334,10 @@ extension PokemonDetailViewController: PokemonDetailViewControllerType {
         self.weightStatStackView.configure(with: String(pokemon.weight))
         self.heightStatStackView.configure(with:  String(pokemon.height))
         self.typeStatStackView.configure(with: pokemon.pokemonTypes)
-        self.speedValueLabel.text = String(pokemon.speed)
-        self.attackValueLabel.text = String(pokemon.attack)
-        self.defenseValueLabel.text = String(pokemon.defense)
+        
+        self.speedSlider.configure(statValue: Float(pokemon.speed), minimumValueImageName: "timer.circle", maximumValueImageName: "timer.circle.fill")
+        self.attackSlider.configure(statValue: Float(pokemon.attack), minimumValueImageName: "dumbbell", maximumValueImageName: "dumbbell.fill")
+        self.defenseSlider.configure(statValue: Float(pokemon.defense), minimumValueImageName: "shield", maximumValueImageName: "shield.fill")        
         
         self.configureImageView(with: pokemon)
     }
@@ -371,21 +349,12 @@ private extension PokemonDetailViewController {
     
     func configureImageView(with viewModel: PokemonViewModel) {
 
-        guard let imageUrlString = viewModel.imageUrl,
-              let imageURL = URL(string: imageUrlString) else {
+        guard let image = viewModel.image else {
             
             self.pokemonImageView.setImage(image: UIImage(named: "LogoSmall")!)
             return
         }
         
-        Task { @MainActor in
-            
-            await self.pokemonImageView.downloadImage(with: imageURL)
-            
-            if let image = self.pokemonImageView.image {
-             
-                self.pokemonImageView.setImage(image: image)
-            }
-        }
+        self.pokemonImageView.setImage(image: image)
     }
 }
