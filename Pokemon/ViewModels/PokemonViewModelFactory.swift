@@ -22,16 +22,16 @@ struct PokemonViewModelFactory {
             
             switch stat.stat.name {
                 
-            case "hp":
+            case PokemonConstants.PokemonViewModel.Stat.hp.rawValue:
                 Hp = value
                 
-            case "attack":
+            case PokemonConstants.PokemonViewModel.Stat.attack.rawValue:
                 attack = value
                 
-            case "defense":
+            case PokemonConstants.PokemonViewModel.Stat.defense.rawValue:
                 defense = value
                 
-            case "speed":
+            case PokemonConstants.PokemonViewModel.Stat.speed.rawValue:
                 speed = value
                 
             default:

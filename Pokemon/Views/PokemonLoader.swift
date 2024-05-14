@@ -21,19 +21,13 @@ class PokemonLoader: UIView {
     override init(frame: CGRect) {
         
         super.init(frame: frame)
-        
-        self.configureView()
+
         self.addSubviews()
         self.defineConstraints()
     }
     
     required init(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func configureView() {
-        
-        
     }
     
     private func addSubviews() {
@@ -47,8 +41,8 @@ class PokemonLoader: UIView {
         
             self.loaderImage.centerXAnchor.constraint(equalTo: self.centerXAnchor),
             self.loaderImage.centerYAnchor.constraint(equalTo: self.centerYAnchor),
-            self.loaderImage.heightAnchor.constraint(equalToConstant: 48),
-            self.loaderImage.widthAnchor.constraint(equalToConstant: 48)
+            self.loaderImage.heightAnchor.constraint(equalToConstant: PokemonConstants.PokemonLoader.loaderSize),
+            self.loaderImage.widthAnchor.constraint(equalToConstant: PokemonConstants.PokemonLoader.loaderSize)
         ])
     }
     

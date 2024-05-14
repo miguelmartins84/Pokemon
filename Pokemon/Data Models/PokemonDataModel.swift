@@ -1,5 +1,5 @@
 //
-//  PokemonModel.swift
+//  PokemonDataModel.swift
 //  Pokemon
 //
 //  Created by Miguel Martins on 09/05/2024.

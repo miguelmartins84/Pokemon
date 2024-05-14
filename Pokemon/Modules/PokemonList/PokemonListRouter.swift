@@ -11,7 +11,7 @@ import UIKit
 
 protocol PokemonListRouterType {
     
-    func showPokemonDetail(with: PokemonViewModel)
+    func onPokemonListRouter(on pokemonListPresenter: PokemonListPresenterType, didTapShowPokemonDetailWith pokemonViewModel: PokemonViewModel)
 }
 
 // MARK: - PokemonListRouter
@@ -35,7 +35,7 @@ final class PokemonListRouter {
 
 extension PokemonListRouter: PokemonListRouterType {
 
-    func showPokemonDetail(with pokemonViewModel: PokemonViewModel) {
+    func onPokemonListRouter(on pokemonListPresenter: PokemonListPresenterType, didTapShowPokemonDetailWith pokemonViewModel: PokemonViewModel) {
 
         let module = moduleFactory.makePokemonDetail(using: self.navigationController,
                                                      for: pokemonViewModel)

@@ -15,9 +15,9 @@ protocol PokemonDetailPresenterType: AnyObject {
     var interactor: PokemonDetailInteractorType { get set }
     var router: PokemonDetailRouterType { get set }
     var pokemon: PokemonViewModel? { get set }
-    
-    func onPokemonDetailPresenter(on pokemonView: PokemonDetailViewControllerType)
-    func didChangeFavoriteStatus(on pokemonView: PokemonDetailViewControllerType)
+        
+    func onPokemonDetailPresenter(on pokemonDetailView: PokemonDetailViewControllerType)
+    func onPokemonDetailPresenterDidChangeFavoriteStatus(on pokemonDetailView: PokemonDetailViewControllerType)
 }
 
 // MARK: - PokemonDetailPresenter
@@ -44,27 +44,28 @@ final class PokemonDetailPresenter {
 // MARK: - PokemonDetailPresenterType implementation
 
 extension PokemonDetailPresenter: PokemonDetailPresenterType {
-
-    func onPokemonDetailPresenter(on pokemonView: PokemonDetailViewControllerType) {
+ 
+    func onPokemonDetailPresenter(on pokemonDetailView: PokemonDetailViewControllerType) {
         
-        self.view = pokemonView
+        self.view = pokemonDetailView
         self.pokemon = self.interactor.pokemon
-        self.view?.onPokemonDetailViewControllerStart()
+        self.view?.onPokemonDetailViewController(on: self)
     }
     
-    func didChangeFavoriteStatus(on pokemonView: any PokemonDetailViewControllerType) {
+    func onPokemonDetailPresenterDidChangeFavoriteStatus(on pokemonDetailView: PokemonDetailViewControllerType) {
         
         Task { @MainActor in
             
             do {
             
-                try await self.interactor.changeFavoriteStatus()
+                try await self.interactor.onPokemonDetailInteractorDidChangeFavoriteStatus(on: self)
                 
-                self.interactor.storeFavoriteStatus()
+                self.interactor.onPokemonDetailInteractorDidStoreFavoriteStatus(on: self)
 
                 let pokemon = self.interactor.pokemon
                 self.pokemon = pokemon
-                self.view?.onPokemonFavoriteStatusChanged(with: pokemon.isFavorited)
+                self.view?.onPokemonDetailViewController(on: self,
+                                                         didChangeFavoriteStatusWith: pokemon.isFavorited)
                 
             } catch {
                 

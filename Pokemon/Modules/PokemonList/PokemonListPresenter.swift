@@ -23,11 +23,9 @@ protocol PokemonListPresenterType: AnyObject {
     func onPokemonListPresenter(on pokemonListView: PokemonListViewControllerType, userSearchedForText searchText: String)
     func onPokemonListPresenter(on pokemonListView: PokemonListViewControllerType, userTappedFavoriteButtonWith: PokemonViewModel)
     func onPokemonListPresenter(on pokemonListView: PokemonListViewControllerType, fetchPokemonViewModelFor row: Int) -> PokemonViewModel?
-    
-    func fetchNextPokemonsOnPokemonListPresenter(on pokemonListView: PokemonListViewControllerType)
-    func fetchNumberOfPokemonsOnPokemonListPresenter(on pokemonListView: PokemonListViewControllerType) -> Int
-    
-    func fetchImages(for rows: [Int], isInitialFetch: Bool) async
+    func onPokemonListPresenter(on pokemonListView: PokemonListViewControllerType, fetchImagesfor rows: [Int], isInitialFetch: Bool) async
+    func onPokemonListPresenterFetchNextPokemons(on pokemonListView: PokemonListViewControllerType)
+    func onPokemonListPresenterFetchNumberOfPokemons(on pokemonListView: PokemonListViewControllerType) -> Int
 }
 
 // MARK: - PokemonListPresenter
@@ -69,7 +67,7 @@ extension PokemonListPresenter: PokemonListPresenterType {
             do {
                 
                 /// 1. Fetch initial batch of pokemons
-                let pokemons = try await self.interactor.fetchInitialPokemons()
+                let pokemons = try await self.interactor.onPokemonListInteractorFetchInitialPokemons(on: self)
                 
                 /// 2. Append pokemon view models to the auxiliary arrays and set their favorite status according to the realm database
                 let pokemonViewModels = self.appendPokemonViewModels(from: pokemons, isInitialFetch: true)
@@ -90,8 +88,9 @@ extension PokemonListPresenter: PokemonListPresenterType {
 
     func onPokemonListPresenter(on pokemonListView: PokemonListViewControllerType, pokemonCellTappedWith pokemonViewModel: PokemonViewModel) {
         
-        print("Navigate to cell at \(pokemonViewModel.name)")
-        self.router.showPokemonDetail(with: pokemonViewModel)
+        print("Navigate to cell at \(pokemonViewModel.name)")        
+        self.router.onPokemonListRouter(on: self,
+                                        didTapShowPokemonDetailWith: pokemonViewModel)
     }
     
     func onPokemonListPresenter(on pokemonListView: PokemonListViewControllerType, userSearchedForText searchText: String) {
@@ -109,7 +108,8 @@ extension PokemonListPresenter: PokemonListPresenterType {
             do {
                 
                 /// 1. Fetch batch of pokemon according to the typed text
-                let pokemons = try await self.interactor.fetchPokemons(withNamesStartingWith: searchText)
+                let pokemons = try await self.interactor.onPokemonListInteractor(on: self,
+                                                                                 didFetchPokemonsWithNamesStartingWith: searchText)
                 
                 /// 2. Append pokemon view models to the auxiliary arrays and set their favorite status according to the database
                 let pokemonViewModels = self.appendPokemonViewModels(from: pokemons, isInitialFetch: false)
@@ -138,10 +138,14 @@ extension PokemonListPresenter: PokemonListPresenterType {
             do {
 
                 /// 1. Set Favorite Status of pokemon view model on interactor
-                let favoriteStatus = try await self.interactor.didSetFavoriteStatus(pokemonId: pokemonViewModel.id, pokemonName: pokemonViewModel.name)
+                let favoriteStatus = try await self.interactor.onPokemonListInteractor(on: self, 
+                                                                                       didSetFavoriteStatusWith: pokemonViewModel.id, 
+                                                                                       pokemonName: pokemonViewModel.name)
 
                 /// 2. Invoke interactor to store the favorite status on the database
-                self.interactor.storeFavoriteStatus(pokemonId: pokemonViewModel.id, pokemonName: pokemonViewModel.name)
+                self.interactor.onPokemonListInteractor(on: self,
+                                                        didStoreFavoriteStatusWith: pokemonViewModel.id,
+                                                        pokemonName: pokemonViewModel.name)
                 
                 /// 3. Update favorite status for the pokemon view models
                 self.updateFavoriteStatusForPokemonViewModel(with: pokemonViewModel.id, favoriteStatus: favoriteStatus)
@@ -176,14 +180,14 @@ extension PokemonListPresenter: PokemonListPresenterType {
         return nil
     }
     
-    func fetchNextPokemonsOnPokemonListPresenter(on pokemonListView: PokemonListViewControllerType) {
+    func onPokemonListPresenterFetchNextPokemons(on pokemonListView: PokemonListViewControllerType) {
         
         Task { @MainActor in
             
             do {
                     
                 /// 1. Invoke interactor to fetch next batch of pokemons
-                let pokemons = try await self.interactor.fetchNextPokemons()
+                let pokemons = try await self.interactor.onPokemonListInteractorfetchNextPokemons(on: self)
                 
                 /// 2. Append pokemon view models to the auxiliary arrays and set their favorite status according to the database
                 let pokemonViewModels = self.appendPokemonViewModels(from: pokemons, isInitialFetch: false)
@@ -198,7 +202,7 @@ extension PokemonListPresenter: PokemonListPresenterType {
         }
     }
     
-    func fetchNumberOfPokemonsOnPokemonListPresenter(on pokemonListView: any PokemonListViewControllerType) -> Int {
+    func onPokemonListPresenterFetchNumberOfPokemons(on pokemonListView: any PokemonListViewControllerType) -> Int {
         
         if self.isSearchContext {
             
@@ -209,6 +213,16 @@ extension PokemonListPresenter: PokemonListPresenterType {
             return self.fetchedPokemonViewModels.count
         }
     }
+    
+    func onPokemonListPresenter(on pokemonListView: any PokemonListViewControllerType, fetchImagesfor rows: [Int], isInitialFetch: Bool) async {
+        
+        await self.fetchImages(for: rows, isInitialFetch: isInitialFetch)
+    }
+}
+
+// MARK: - Private Methods
+
+extension PokemonListPresenter {
     
     func fetchImages(for rows: [Int], isInitialFetch: Bool = false) async {
                         
@@ -254,7 +268,8 @@ extension PokemonListPresenter: PokemonListPresenterType {
         do {
 
             /// 4. Fetch images from the interactor
-            let imageModels = try await self.interactor.fetchImages(of: pokemonImageUrls)
+            let imageModels = try await self.interactor.onPokemonListInteractor(on: self,
+                                                                                fetchImagesFor: pokemonImageUrls)
             
             /// 5. Cycle through the image modes and edit the appropriate pokemon view models with the corresponding images
             for imageModel in imageModels {
@@ -282,11 +297,6 @@ extension PokemonListPresenter: PokemonListPresenterType {
             print("Error fetching images: \(error)")
         }
     }
-}
-
-// MARK: - Private Methods
-
-extension PokemonListPresenter {
     
     func appendPokemonViewModels(from pokemons: [Pokemon], isInitialFetch: Bool) -> [PokemonViewModel] {
         
@@ -299,7 +309,10 @@ extension PokemonListPresenter {
             var pokemonViewModel = PokemonViewModelFactory.createPokemonViewModel(from: pokemon)
             
             /// 3. Set favorite status of the pokemon view models according to the values stored in the database
-            pokemonViewModel.setFavoriteStatus(isFavorited: self.interactor.fetchFavoriteStatus(pokemonId: pokemonViewModel.id))
+            
+            let favoriteStatus = self.interactor.onPokemonListInteractor(on: self,
+                                                                         didfetchFavoriteStatusWith: pokemonViewModel.id)
+            pokemonViewModel.setFavoriteStatus(isFavorited: favoriteStatus)
             
             /// 4. Append to the pokemon view models array
             pokemonViewModels.append(pokemonViewModel)

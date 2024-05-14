@@ -13,13 +13,13 @@ protocol PokemonListInteractorType {
     
     var presenter: PokemonListPresenterType? { get set }
     
-    func fetchInitialPokemons() async throws -> [Pokemon]
-    func fetchNextPokemons() async throws -> [Pokemon]
-    func fetchPokemons(withNamesStartingWith searchText: String) async throws -> [Pokemon]
-    func fetchFavoriteStatus(pokemonId: Int) -> Bool
-    func didSetFavoriteStatus(pokemonId: Int, pokemonName: String) async throws -> Bool
-    func storeFavoriteStatus(pokemonId: Int, pokemonName: String)
-    func fetchImages(of imageUrlModels: [PokemonImageUrlModel]) async throws -> [PokemonImageModel]
+    func onPokemonListInteractorFetchInitialPokemons(on pokemonListPresenter: PokemonListPresenterType) async throws -> [Pokemon]
+    func onPokemonListInteractorfetchNextPokemons(on pokemonListPresenter: PokemonListPresenterType) async throws -> [Pokemon]
+    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didFetchPokemonsWithNamesStartingWith searchText: String) async throws -> [Pokemon]
+    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didfetchFavoriteStatusWith pokemonId: Int) -> Bool
+    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didSetFavoriteStatusWith pokemonId: Int, pokemonName: String) async throws -> Bool
+    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didStoreFavoriteStatusWith pokemonId: Int, pokemonName: String)
+    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, fetchImagesFor imageUrlModels: [PokemonImageUrlModel]) async throws -> [PokemonImageModel]
 }
 
 // MARK: - PokemonListInteractor
@@ -28,39 +28,44 @@ final class PokemonListInteractor {
     
     weak var presenter: PokemonListPresenterType?
     
-    private var pokemonManager: PokemonManagerType    
+    private var pokemonManager: PokemonManagerType
+    private var asyncImageManager: AsyncImageManagerType
     
-    init(pokemonManager: PokemonManagerType = PokemonManager.shared) {
+    init(
+        pokemonManager: PokemonManagerType = PokemonManager.shared,
+        asyncImageManager: AsyncImageManagerType = AsyncImageManager.shared
+    ) {
         
         self.pokemonManager = pokemonManager
+        self.asyncImageManager = asyncImageManager
     }
 }
 
 // MARK: - PokemonListInteractorType implementation
 
 extension PokemonListInteractor: PokemonListInteractorType {
-    
-    func fetchInitialPokemons() async throws -> [Pokemon] {
+
+    func onPokemonListInteractorFetchInitialPokemons(on pokemonListPresenter: PokemonListPresenterType) async throws -> [Pokemon] {
         
         return try await self.pokemonManager.fetchInitialPokemons()
     }
     
-    func fetchNextPokemons() async throws -> [Pokemon] {
+    func onPokemonListInteractorfetchNextPokemons(on pokemonListPresenter: PokemonListPresenterType) async throws -> [Pokemon] {
         
         return try await self.pokemonManager.fetchPokemons()
     }
     
-    func fetchPokemons(withNamesStartingWith searchText: String) async throws -> [Pokemon] {
+    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didFetchPokemonsWithNamesStartingWith searchText: String) async throws -> [Pokemon] {
         
         return try await self.pokemonManager.fetchPokemons(withNamesStartingWith: searchText)
     }
     
-    func fetchFavoriteStatus(pokemonId: Int) -> Bool {
+    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didfetchFavoriteStatusWith pokemonId: Int) -> Bool {
         
         self.pokemonManager.fetchFavoriteStatus(for: pokemonId)
     }
     
-    func didSetFavoriteStatus(pokemonId: Int, pokemonName: String) async throws -> Bool {
+    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didSetFavoriteStatusWith pokemonId: Int, pokemonName: String) async throws -> Bool {
         
         do {
             let favoriteStatus = self.pokemonManager.fetchFavoriteStatus(for: pokemonId)
@@ -72,13 +77,13 @@ extension PokemonListInteractor: PokemonListInteractorType {
         }
     }
     
-    func storeFavoriteStatus(pokemonId: Int, pokemonName: String) {
+    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didStoreFavoriteStatusWith pokemonId: Int, pokemonName: String) {
         
         let favoriteStatus = self.pokemonManager.fetchFavoriteStatus(for: pokemonId)
         self.pokemonManager.didStoreFavoriteStatus(with: pokemonId, pokemonName: pokemonName, isFavorite: !favoriteStatus)
     }
     
-    func fetchImages(of imageUrlModels: [PokemonImageUrlModel]) async throws -> [PokemonImageModel] {
+    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, fetchImagesFor imageUrlModels: [PokemonImageUrlModel]) async throws -> [PokemonImageModel] {
         
         return try await withThrowingTaskGroup(of: PokemonImageModel.self) { group in
             
@@ -86,7 +91,7 @@ extension PokemonListInteractor: PokemonListInteractorType {
                 
                 group.addTask {
                     
-                    let image = try await AsyncImageManager.shared.downloadImageData(from: imageUrlModel.imageUrl)
+                    let image = try await self.asyncImageManager.downloadImageData(from: imageUrlModel.imageUrl)
                     return PokemonImageModel(row: imageUrlModel.row, image: image)
                 }
             }

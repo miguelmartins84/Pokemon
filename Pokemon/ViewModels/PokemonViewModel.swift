@@ -48,84 +48,124 @@ struct PokemonViewModel {
             switch type {
                 
             case PokemonConstants.PokemonViewModel.Types.fighting.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "hammer.circle.fill", color: .magenta)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.fighting.rawValue,
+                                                       color: .magenta)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.flying.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "bird.circle.fill", color: .accent)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.flying.rawValue,
+                                                       color: .accent)
                 typeAndImages.append(pokemonType)
              
             case PokemonConstants.PokemonViewModel.Types.poison.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "hourglass.circle.fill", color: .darkGray)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.poison.rawValue,
+                                                       color: .darkGray)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.ground.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "circle.circle.fill", color: .brown)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.ground.rawValue,
+                                                       color: .brown)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.rock.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "record.circle.fill", color: .systemGray)
+                let pokemonType = PokemonTypeViewModel(type: type,
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.rock.rawValue,
+                                                       color: .systemGray)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.bug.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "ladybug.circle.fill", color: .black)
+                let pokemonType = PokemonTypeViewModel(type: type,
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.bug.rawValue,
+                                                       color: .black)
                 typeAndImages.append(pokemonType)
              
             case PokemonConstants.PokemonViewModel.Types.ghost.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "tornado.circle.fill", color: .systemGray2)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.ghost.rawValue,
+                                                       color: .systemGray2)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.steel.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "diamond.circle.fill", color: .systemBrown)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.steel.rawValue,
+                                                       color: .systemBrown)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.fire.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "flame.circle.fill", color: .systemOrange)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.fire.rawValue,
+                                                       color: .systemOrange)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.water.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "drop.circle.fill", color: .systemCyan)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.water.rawValue,
+                                                       color: .systemCyan)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.grass.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "leaf.circle.fill", color: .systemGreen)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.grass.rawValue,
+                                                       color: .systemGreen)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.electric.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "bolt.circle.fill", color: .systemYellow)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName:PokemonConstants.PokemonViewModel.Images.electric.rawValue,
+                                                       color: .systemYellow)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.psychic.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "hurricane.circle.fill", color: .systemPink)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.psychic.rawValue,
+                                                       color: .systemPink)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.ice.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "snowflake.circle.fill", color: .systemTeal)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.ice.rawValue,
+                                                       color: .systemTeal)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.dragon.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "eye.circle.fill", color: .systemRed)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.dragon.rawValue,
+                                                       color: .systemRed)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.dark.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "cloud.circle.fill", color: .systemIndigo)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.dark.rawValue,
+                                                       color: .systemIndigo)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.fairy.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "wind.circle.fill", color: .systemBlue)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.fairy.rawValue,
+                                                       color: .systemBlue)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.stellar.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "star.circle.fill", color: .systemMint)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.stellar.rawValue,
+                                                       color: .systemMint)
                 typeAndImages.append(pokemonType)
                 
             case PokemonConstants.PokemonViewModel.Types.normal.rawValue.capitalized,
                 PokemonConstants.PokemonViewModel.Types.unknown.rawValue.capitalized:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "circle.fill", color: .systemTeal)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.normal.rawValue,
+                                                       color: .systemTeal)
                 typeAndImages.append(pokemonType)
 
             default:
-                let pokemonType = PokemonTypeViewModel(type: type, systemImageName: "circle.fill", color: .systemTeal)
+                let pokemonType = PokemonTypeViewModel(type: type, 
+                                                       systemImageName: PokemonConstants.PokemonViewModel.Images.normal.rawValue,
+                                                       color: .systemTeal)
                 typeAndImages.append(pokemonType)
             }
         }

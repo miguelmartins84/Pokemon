@@ -11,8 +11,9 @@ import UIKit
 protocol PokemonDetailViewControllerType: AnyObject {
     
     var presenter: PokemonDetailPresenterType { get set }
-    func onPokemonDetailViewControllerStart()
-    func onPokemonFavoriteStatusChanged(with isFavorited: Bool)
+
+    func onPokemonDetailViewController(on pokemonListPresenter: PokemonDetailPresenterType)
+    func onPokemonDetailViewController(on pokemonListPresenter: PokemonDetailPresenterType, didChangeFavoriteStatusWith isFavorited: Bool)
 }
 
 // MARK: - PokemonDetailViewController
@@ -205,7 +206,7 @@ class PokemonDetailViewController: ViewController {
     
     @objc func changeFavoriteStatus() {
         
-        self.presenter.didChangeFavoriteStatus(on: self)
+        self.presenter.onPokemonDetailPresenterDidChangeFavoriteStatus(on: self)
     }
     
     override func addSubviews() {
@@ -316,13 +317,7 @@ class PokemonDetailViewController: ViewController {
 
 extension PokemonDetailViewController: PokemonDetailViewControllerType {
     
-    func onPokemonFavoriteStatusChanged(with isFavorited: Bool) {
-        
-        let buttonImage = isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
-        self.favoriteButton.setImage(buttonImage, for: .normal)
-    }
-
-    func onPokemonDetailViewControllerStart() {
+    func onPokemonDetailViewController(on pokemonListPresenter: any PokemonDetailPresenterType) {
         
         guard let pokemon = self.presenter.pokemon else { return }
         
@@ -337,9 +332,15 @@ extension PokemonDetailViewController: PokemonDetailViewControllerType {
         
         self.speedSlider.configure(statValue: Float(pokemon.speed), minimumValueImageName: "timer.circle", maximumValueImageName: "timer.circle.fill")
         self.attackSlider.configure(statValue: Float(pokemon.attack), minimumValueImageName: "dumbbell", maximumValueImageName: "dumbbell.fill")
-        self.defenseSlider.configure(statValue: Float(pokemon.defense), minimumValueImageName: "shield", maximumValueImageName: "shield.fill")        
+        self.defenseSlider.configure(statValue: Float(pokemon.defense), minimumValueImageName: "shield", maximumValueImageName: "shield.fill")
         
         self.configureImageView(with: pokemon)
+    }
+    
+    func onPokemonDetailViewController(on pokemonListPresenter: any PokemonDetailPresenterType, didChangeFavoriteStatusWith isFavorited: Bool) {
+        
+        let buttonImage = isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
+        self.favoriteButton.setImage(buttonImage, for: .normal)
     }
 }
 

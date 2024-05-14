@@ -63,6 +63,18 @@ extension PokemonConstants {
         static let collectionViewLineSpacing: CGFloat = 8
         static let collectionViewInsets: CGFloat = 20
     }
+    
+    enum PokemonLoader {
+        
+        static let loaderSize: CGFloat = 48
+    }
+    
+    enum PokemonStatSlider {
+        
+        static let maximumValue: Float = 200
+        static let lowerBound: Float = 65
+        static let mediumBound: Float = 140
+    }
 }
 
 // MARK: - PokemonViewModel
@@ -93,6 +105,37 @@ extension PokemonConstants {
             case stellar
             case normal
             case unknown
+        }
+        
+        enum Images: String {
+            
+            case fighting = "hammer.circle.fill"
+            case flying = "bird.circle.fill"
+            case poison = "hourglass.circle.fill"
+            case ground = "circle.circle.fill"
+            case rock = "record.circle.fill"
+            case bug = "ladybug.circle.fill"
+            case ghost = "tornado.circle.fill"
+            case steel = "diamond.circle.fill"
+            case fire = "flame.circle.fill"
+            case water = "drop.circle.fill"
+            case grass = "leaf.circle.fill"
+            case electric = "bolt.circle.fill"
+            case psychic = "hurricane.circle.fill"
+            case ice = "snowflake.circle.fill"
+            case dragon = "eye.circle.fill"
+            case dark = "cloud.circle.fill"
+            case fairy = "wind.circle.fill"
+            case stellar = "star.circle.fill"
+            case normal = "circle.fill"
+        }
+        
+        enum Stat: String {
+            
+            case hp
+            case attack
+            case defense
+            case speed
         }
     }
 }
