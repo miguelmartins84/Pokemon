@@ -74,7 +74,7 @@ class PokemonListInteractorTests: XCTestCase {
             fetchedPokemonViewModels: [],
             refinedPokemonViewModels: [])
  
-        Task {
+        Task { @MainActor in
             
             do {
                 
@@ -93,10 +93,143 @@ class PokemonListInteractorTests: XCTestCase {
         }
     }
     
-    /// Missing tests for:
-    /// func onPokemonListInteractorFetchInitialPokemons(on pokemonListPresenter: PokemonListPresenterType) async throws -> [Pokemon]
-    /// func onPokemonListInteractorfetchNextPokemons(on pokemonListPresenter: PokemonListPresenterType) async throws -> [Pokemon]
-    /// func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didFetchPokemonsWithNamesStartingWith searchText: String) async throws -> [Pokemon]
+    func testFailedDidSetFavoriteStatus() {
+        
+        let presenter = MockPokemonListPresenter(
+            interactor: self.pokemonListInteractor,
+            router: MockPokemonListRouter(),
+            fetchedPokemonViewModels: [],
+            refinedPokemonViewModels: [])
+        
+        self.mockPokemonManager.shouldThrowError = true
+        
+        let expectation = XCTestExpectation(description: "Failed to change favorite status")
+ 
+        Task { @MainActor in
+            
+            do {
+                
+                let _ = try await self.pokemonListInteractor.onPokemonListInteractor(on: presenter, didSetFavoriteStatusWith: 3, pokemonName: "Pikachu")
+                
+                XCTFail("Execution should have failed")
+                
+            } catch {
+                
+                expectation.fulfill()
+            }
+        }
+    }
     
-    /// func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, fetchImagesFor imageUrlModels: [PokemonImageUrlModel]) async throws -> [PokemonImageModel]
+    func testFetchInitialPokemons() {
+        
+        let presenter = MockPokemonListPresenter(
+            interactor: self.pokemonListInteractor,
+            router: MockPokemonListRouter(),
+            fetchedPokemonViewModels: [],
+            refinedPokemonViewModels: [])
+        
+        self.mockPokemonManager.allFetchedPokemons.append(contentsOf: [ .mock(), .mock(id: 2, name: "Charmander"), .mock(id: 3, name: "Bulbasaur")])
+        
+        Task { @MainActor in
+            
+            do {
+                
+                let initialPokemons = try await self.pokemonListInteractor.onPokemonListInteractorFetchInitialPokemons(on: presenter)
+                
+                XCTAssertFalse(initialPokemons.isEmpty)
+                XCTAssertEqual(initialPokemons.count, self.mockPokemonManager.allFetchedPokemons.count)
+                
+            } catch {
+                
+                XCTFail("Failed to change favorite status with error \(error)")
+            }
+        }
+    }
+    
+    func testFetchNextPokemons() {
+        
+        let presenter = MockPokemonListPresenter(
+            interactor: self.pokemonListInteractor,
+            router: MockPokemonListRouter(),
+            fetchedPokemonViewModels: [],
+            refinedPokemonViewModels: [])
+        
+        self.mockPokemonManager.allFetchedPokemons.append(contentsOf: [ .mock(), .mock(id: 2, name: "Charmander"), .mock(id: 3, name: "Bulbasaur")])
+        
+        Task { @MainActor in
+            
+            do {
+                
+                let initialPokemons = try await self.pokemonListInteractor.onPokemonListInteractorFetchInitialPokemons(on: presenter)
+                
+                XCTAssertFalse(initialPokemons.isEmpty)
+                XCTAssertEqual(initialPokemons.count, self.mockPokemonManager.allFetchedPokemons.count)
+                
+                self.mockPokemonManager.allFetchedPokemons.append(contentsOf: [ .mock(id: 4, name: "Eevee"), .mock(id: 5, name: "Squirtle"), .mock(id: 6, name: "Charizard")])
+                
+                let nextPokemons = try await self.pokemonListInteractor.onPokemonListInteractorfetchNextPokemons(on: presenter)
+                
+                XCTAssertFalse(nextPokemons.isEmpty)
+                XCTAssertEqual(nextPokemons.count + initialPokemons.count, self.mockPokemonManager.allFetchedPokemons.count)
+                
+            } catch {
+                
+                XCTFail("Failed to change favorite status with error \(error)")
+            }
+        }
+    }
+    
+    func testFetchPokemonsThatStartWithSearchText() {
+        
+        let presenter = MockPokemonListPresenter(
+            interactor: self.pokemonListInteractor,
+            router: MockPokemonListRouter(),
+            fetchedPokemonViewModels: [],
+            refinedPokemonViewModels: [])
+        
+        self.mockPokemonManager.allFetchedPokemons.append(contentsOf: [ .mock(), .mock(id: 2, name: "Charmander"), .mock(id: 3, name: "Bulbasaur"), .mock(id: 4, name: "Charizard")])
+        
+        Task { @MainActor in
+            
+            do {
+                
+                let refinedPokemons = try await self.pokemonListInteractor.onPokemonListInteractor(on: presenter, didFetchPokemonsWithNamesStartingWith: "Char")
+                
+                XCTAssertFalse(refinedPokemons.isEmpty)
+                XCTAssertEqual(refinedPokemons.count, self.mockPokemonManager.refinedPokemons.count)
+                
+            } catch {
+                
+                XCTFail("Failed to change favorite status with error \(error)")
+            }
+        }
+    }
+    
+    func testFetchImagesForImageUrls() {
+        
+        let presenter = MockPokemonListPresenter(
+            interactor: self.pokemonListInteractor,
+            router: MockPokemonListRouter(),
+            fetchedPokemonViewModels: [],
+            refinedPokemonViewModels: [])
+        
+        guard let url = URL(string: "https://www.google.com") else { return }
+        
+        let pokemonImageUrls: [PokemonImageUrlModel] = [PokemonImageUrlModel(row: 1, imageUrl: url), PokemonImageUrlModel(row: 2, imageUrl: url)]
+        
+        Task { @MainActor in
+            
+            do {
+                
+                let pokemonImageUrls = try await self.pokemonListInteractor.onPokemonListInteractor(on: presenter, fetchImagesFor: pokemonImageUrls)
+                
+                XCTAssertFalse(pokemonImageUrls.isEmpty)
+                XCTAssertEqual(2, pokemonImageUrls.count)
+                
+            } catch {
+                
+                XCTFail("Failed to change favorite status with error \(error)")
+            }
+        }
+    }
 }

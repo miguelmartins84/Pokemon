@@ -15,34 +15,51 @@ enum MockPokemonManagerError: Error {
 
 class MockPokemonManager: PokemonManagerType {
     
+    var allPokemonModels: [PokemonModel]
+    var refinedPokemonModels: [PokemonModel]
+    var allFetchedPokemons: [Pokemon]
+    
+    var refinedPokemons: [Pokemon]
     var favoritePokemons: Set<Int> = []
     
     var delegate: PokemonManagerDelegateType?
     var shouldThrowError: Bool
     
+    var isInSearchContext: Bool
+    
     init(favoritePokemons: Set<Int> = [],
+         allPokemonModels: [PokemonModel] = [],
+         refinedPokemonModels: [PokemonModel] = [],
+         allFetchedPokemons: [Pokemon] = [],
+         refinedPokemons: [Pokemon] = [],
          delegate: PokemonManagerDelegateType? = nil,
+         isInSearchContext: Bool = false,
          shouldThrowError: Bool = false
     ) {
         
+        self.allPokemonModels = allPokemonModels
+        self.refinedPokemonModels = refinedPokemonModels
+        self.allFetchedPokemons = allFetchedPokemons
+        self.refinedPokemons = refinedPokemons
         self.favoritePokemons = favoritePokemons
         self.delegate = delegate
+        self.isInSearchContext = isInSearchContext
         self.shouldThrowError = shouldThrowError
     }
     
     func fetchInitialPokemons() async throws -> [Pokemon] {
         
-        return []
+        return self.isInSearchContext ? self.refinedPokemons : self.allFetchedPokemons
     }
     
     func fetchPokemons() async throws -> [Pokemon] {
         
-        return []
+        return self.isInSearchContext ? self.refinedPokemons : self.allFetchedPokemons
     }
     
     func fetchPokemons(withNamesStartingWith searchText: String) async throws -> [Pokemon] {
         
-        return []
+        return self.isInSearchContext ? self.refinedPokemons.filter({ $0.name.hasPrefix(searchText) }) : self.allFetchedPokemons.filter({ $0.name.hasPrefix(searchText) })
     }
     
     func didChangePokemonFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool) async throws -> Bool {
@@ -73,7 +90,4 @@ class MockPokemonManager: PokemonManagerType {
         
         self.favoritePokemons.insert(pokemonId)
     }
-    
-    
-    
 }
