@@ -147,7 +147,10 @@ class PokemonCellView: UICollectionViewCell {
             
             return
         }
-        
+        /// 1. Update favorite button before data work
+        let buttonImage = pokemonViewModel.isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
+        self.favoriteButton.setImage(buttonImage, for: .normal)
+
         self.delegate?.didTapFavoriteButton(with: pokemonViewModel)
     }
 }

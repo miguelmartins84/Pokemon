@@ -36,8 +36,9 @@ final class PokemonListInteractor {
         asyncImageManager: AsyncImageManagerType = AsyncImageManager.shared
     ) {
         
-        self.pokemonManager = pokemonManager
         self.asyncImageManager = asyncImageManager
+        self.pokemonManager = pokemonManager
+        self.pokemonManager.delegate = self
     }
 }
 
@@ -106,5 +107,15 @@ extension PokemonListInteractor: PokemonListInteractorType {
             
             return fetchedImages
         }
+    }
+}
+
+// MARK: - PokemonManagerDelegateType implementation
+
+extension PokemonListInteractor: PokemonManagerDelegateType {
+    
+    func onPokemonManager(on pokemonManager: any PokemonManagerType, didChangeFavoriteStatusOfPokemonWith pokemonId: Int, favoriteStatus: Bool) {
+        
+        self.presenter?.onPokemonListInteractor(on: self, didChangeFavoriteStatusOf: pokemonId)
     }
 }

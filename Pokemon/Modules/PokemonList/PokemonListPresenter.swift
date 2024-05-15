@@ -26,6 +26,8 @@ protocol PokemonListPresenterType: AnyObject {
     func onPokemonListPresenter(on pokemonListView: PokemonListViewControllerType, fetchImagesfor rows: [Int], isInitialFetch: Bool) async
     func onPokemonListPresenterFetchNextPokemons(on pokemonListView: PokemonListViewControllerType)
     func onPokemonListPresenterFetchNumberOfPokemons(on pokemonListView: PokemonListViewControllerType) -> Int
+    
+    func onPokemonListInteractor(on pokemoListInteractor: PokemonListInteractorType, didChangeFavoriteStatusOf pokemonId: Int)
 }
 
 // MARK: - PokemonListPresenter
@@ -217,6 +219,13 @@ extension PokemonListPresenter: PokemonListPresenterType {
     func onPokemonListPresenter(on pokemonListView: any PokemonListViewControllerType, fetchImagesfor rows: [Int], isInitialFetch: Bool) async {
         
         await self.fetchImages(for: rows, isInitialFetch: isInitialFetch)
+    }
+    
+    func onPokemonListInteractor(on pokemoListInteractor: PokemonListInteractorType, didChangeFavoriteStatusOf pokemonId: Int) {
+        
+        let favoriteStatus = self.interactor.onPokemonListInteractor(on: self,
+                                                                     didfetchFavoriteStatusWith: pokemonId)
+        self.updateFavoriteStatusForPokemonViewModel(with: pokemonId, favoriteStatus: favoriteStatus)
     }
 }
 

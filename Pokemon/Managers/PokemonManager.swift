@@ -7,11 +7,20 @@
 
 import Foundation
 
-// MARK: - PokemonManagerType Definition
+// MARK: - PokemonManagerDelegateType definition
+
+protocol PokemonManagerDelegateType: AnyObject {
+    
+    func onPokemonManager(on pokemonManager: PokemonManagerType, didChangeFavoriteStatusOfPokemonWith pokemonId: Int, favoriteStatus: Bool)
+}
+
+// MARK: - PokemonManagerType definition
 
 protocol PokemonManagerType {
     
     var favoritePokemons: Set<Int> { get }
+    
+    var delegate: PokemonManagerDelegateType? {get set}
     
     func fetchInitialPokemons() async throws -> [Pokemon]
     func fetchPokemons() async throws -> [Pokemon]
@@ -54,6 +63,8 @@ class PokemonManager {
     private var isInSearchContext: Bool = false
 
     private let limit = 60
+    
+    weak var delegate: PokemonManagerDelegateType?
 
     init(
         pokemonService: PokemonServiceType = PokemonService(),
@@ -223,11 +234,22 @@ extension PokemonManager: PokemonManagerType {
         
         if isFavorite == true {
             
-            return try await self.pokemonService.addPokemonToFavorites(with: pokemonId, pokemonName: pokemonName)
+            /// 1. Add pokemon to favorites
+            let favoriteStatus = try await self.pokemonService.addPokemonToFavorites(with: pokemonId, pokemonName: pokemonName)
+            
+            /// 2. Inform delegates that the pokemon favorite status changed
+            self.delegate?.onPokemonManager(on: self, didChangeFavoriteStatusOfPokemonWith: pokemonId, favoriteStatus: favoriteStatus)
+            
+            return favoriteStatus
 
         } else {
+            /// 1. Remove pokemon from favorites
+            let favoriteStatus = try await self.pokemonService.removePokemonFromFavorites(with: pokemonId, pokemonName: pokemonName)
             
-            return try await self.pokemonService.removePokemonFromFavorites(with: pokemonId, pokemonName: pokemonName)
+            /// 2. Inform delegates that the pokemon favorite status changed
+            self.delegate?.onPokemonManager(on: self, didChangeFavoriteStatusOfPokemonWith: pokemonId, favoriteStatus: favoriteStatus)
+            
+            return favoriteStatus
         }
     }
 }
