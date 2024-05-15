@@ -3,6 +3,14 @@ Pokémon
 
 This app is a Pokédex Style App that allows users to list, search and set Pokémons as their favorites.
 
+### Setup:
+
+This app uses CocoaPods. To setup the project after fetching the code on the main branch, run:
+
+```
+pod install
+```
+
 ### Main Characteristics of this App:
 
 * Listing, Searching, Favoriting Pokemons
@@ -10,11 +18,13 @@ This app is a Pokédex Style App that allows users to list, search and set Poké
 ### Technical Specs
 
 * Modular architecture (VIPER)
+* CocoaPods (see Setup section)
 * Swift / UIKit (without the use of storyboards)
 * Async/await for comunication with the API (https://pokeapi.co/)
 * Dependency injection
 * Prefetching of data for infinite scrolling
 * Search mechanism
+* Caching of images using NSCache
 * Favoriting pokemons using webhooks (https://webhook.site/)
 * Storing favorite pokemons in REALM database 
 * Adaptative Layout (allows for portrait or landscape)
