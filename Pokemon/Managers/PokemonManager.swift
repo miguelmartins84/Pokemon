@@ -19,6 +19,13 @@ protocol PokemonManagerDelegateType: AnyObject {
 protocol PokemonManagerType {
     
     var favoritePokemons: Set<Int> { get }
+    var allPokemonModels: [PokemonModel] { get }
+    var refinedPokemonModels: [PokemonModel] { get }
+    
+    var allFetchedPokemons: [Pokemon] { get }
+    var refinedPokemons: [Pokemon] { get }
+    
+    var isInSearchContext: Bool { get }
     
     var delegate: PokemonManagerDelegateType? {get set}
     
@@ -49,18 +56,20 @@ class PokemonManager {
     var favoritePokemons: Set<Int> = []
     
     // Stores the ordered pokemon models and all the already fetched pokemons
-    private var allPokemonsModels: [PokemonModel] = []
-    private var allFetchedPokemons: [Pokemon] = []
+    var allPokemonModels: [PokemonModel] = []
+    var allFetchedPokemons: [Pokemon] = []
+
     private var allFetchedPages: Set<Int> = []
     private var allOffset = 0
     
     // Stores the refined pokemon models when a user searches (for paging)
-    private var refinedPokemonsModels: [PokemonModel] = []
-    private var refinedPokemons: [Pokemon] = []
+    var refinedPokemonModels: [PokemonModel] = []
+    var refinedPokemons: [Pokemon] = []
+
     private var refinedFetchedPages: Set<Int> = []
     private var refinedOffset = 0
     
-    private var isInSearchContext: Bool = false
+    var isInSearchContext: Bool = false
 
     private let limit = 60
     
@@ -84,15 +93,15 @@ extension PokemonManager: PokemonManagerType {
     func fetchInitialPokemons() async throws -> [Pokemon] {
         
         let pokemonModels = try await self.pokemonService.fetchAllPokemonModels()
-        self.allPokemonsModels = pokemonModels.sorted(by: { $0.name < $1.name })
-        self.allPokemonsModels.forEach { pokemonModel in
+        self.allPokemonModels = pokemonModels.sorted(by: { $0.name < $1.name })
+        self.allPokemonModels.forEach { pokemonModel in
             
             self.allFetchedPokemonsModelsDictionary[pokemonModel.name] = pokemonModel
         }
         
-        let limit = self.allPokemonsModels.count < self.limit ? self.allPokemonsModels.count : self.limit
+        let limit = self.allPokemonModels.count < self.limit ? self.allPokemonModels.count : self.limit
         
-        let initialPokemonModels = Array(self.allPokemonsModels[0 ..< limit])
+        let initialPokemonModels = Array(self.allPokemonModels[0 ..< limit])
                 
         try await self.loadPokemons(from: initialPokemonModels)
         
@@ -107,12 +116,12 @@ extension PokemonManager: PokemonManagerType {
     
     func fetchPokemons() async throws -> [Pokemon] {
         
-        let currentPokemonsModels = self.isInSearchContext ? self.refinedPokemonsModels : self.allPokemonsModels
+        let currentPokemonsModels = self.isInSearchContext ? self.refinedPokemonModels : self.allPokemonModels
         let currentFetchedPages = self.isInSearchContext ? self.refinedFetchedPages : self.allFetchedPages
         let currentPokemons = self.isInSearchContext ? self.refinedPokemons : self.allFetchedPokemons
         let offset = self.isInSearchContext ? self.refinedOffset : self.allOffset
         
-        let limit = self.allPokemonsModels.count < self.limit ? self.allPokemonsModels.count : self.limit
+        let limit = self.allPokemonModels.count < self.limit ? self.allPokemonModels.count : self.limit
         
         let numberOfPages = currentPokemonsModels.count / limit
         
@@ -157,15 +166,15 @@ extension PokemonManager: PokemonManagerType {
             
             self.clearState(isSearch: true)
             
-            let filteredPokemonsModels = self.allPokemonsModels.filter( { $0.name.hasPrefix(searchText.lowercased())})
-            print(filteredPokemonsModels.map { $0.name })
+            let filteredPokemonModels = self.allPokemonModels.filter( { $0.name.hasPrefix(searchText.lowercased())})
+            print(filteredPokemonModels.map { $0.name })
             
-            self.refinedPokemonsModels = filteredPokemonsModels
+            self.refinedPokemonModels = filteredPokemonModels
             
             var alreadyFetchedPokemons: [Pokemon] = []
             var pokemonModelsToFetch: [PokemonModel] = []
             
-            for pokemonModel in filteredPokemonsModels {
+            for pokemonModel in filteredPokemonModels {
                 
                 if let fetchedPokemon = self.allFetchedPokemonsDictionary[pokemonModel.name] {
                     
