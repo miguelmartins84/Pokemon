@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "International_Pokémon_logo.svg.png",
+      "filename" : "International_Pokémon_logo.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "International_Pokémon_logo.svg@2x.png",
+      "filename" : "International_Pokémon_logo@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "International_Pokémon_logo.svg@3x.png",
+      "filename" : "International_Pokémon_logo@3x.png",
       "idiom" : "universal",
       "scale" : "3x"
     }
