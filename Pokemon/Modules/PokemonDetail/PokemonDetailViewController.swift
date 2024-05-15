@@ -352,7 +352,11 @@ private extension PokemonDetailViewController {
 
         guard let image = viewModel.image else {
             
-            self.pokemonImageView.setImage(image: UIImage(named: "LogoSmall")!)
+            if let pokemonImage = UIImage(named: "PokemonLogo") {
+                
+                self.pokemonImageView.setImage(image: pokemonImage)
+            }
+            
             return
         }
         
