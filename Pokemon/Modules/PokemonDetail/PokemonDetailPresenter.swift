@@ -57,19 +57,37 @@ extension PokemonDetailPresenter: PokemonDetailPresenterType {
         Task { @MainActor in
             
             do {
-            
+
+                let currentFavoriteStatus = self.interactor.pokemon.isFavorited
+                
+                /// 1. Update the layout before doing the data work
+                let statusToSet = !currentFavoriteStatus
+                self.view?.onPokemonDetailViewController(on: self,
+                                                         didChangeFavoriteStatusWith: statusToSet)
+
+                /// 2. Invoke interactor to inform that a pokemon did change its favorite status
                 try await self.interactor.onPokemonDetailInteractorDidChangeFavoriteStatus(on: self)
                 
+                /// 3. Store the new status on the database
                 self.interactor.onPokemonDetailInteractorDidStoreFavoriteStatus(on: self)
 
-                let pokemon = self.interactor.pokemon
-                self.pokemon = pokemon
-                self.view?.onPokemonDetailViewController(on: self,
-                                                         didChangeFavoriteStatusWith: pokemon.isFavorited)
+                let updatedPokemon = self.interactor.pokemon
+                self.pokemon = updatedPokemon
+                
+                /// 4. Double check if the current pokemon was properly saved with the new status
+                if updatedPokemon.isFavorited !=  statusToSet {
+                    
+                    self.view?.onPokemonDetailViewController(on: self,
+                                                             didChangeFavoriteStatusWith: updatedPokemon.isFavorited)
+                }
                 
             } catch {
                 
                 print(error.localizedDescription)
+                
+                /// If an error occurred then we need to set the previous status again
+                self.view?.onPokemonDetailViewController(on: self,
+                                                         didChangeFavoriteStatusWith: self.interactor.pokemon.isFavorited)
             }
         }
     }

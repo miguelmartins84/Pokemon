@@ -46,7 +46,8 @@ extension PokemonDetailInteractor: PokemonDetailInteractorType {
         do {
             
             let favoriteStatus = try await self.pokemonManager.didChangePokemonFavoriteStatus(with: self.pokemon.id, pokemonName: self.pokemon.name, isFavorite: !self.pokemon.isFavorited)
-            pokemon.setFavoriteStatus(isFavorited: favoriteStatus)
+            self.pokemon.setFavoriteStatus(isFavorited: favoriteStatus)
+
         } catch {
             
             throw PokemonNetworkError.failedToAddPokemon(with: error)

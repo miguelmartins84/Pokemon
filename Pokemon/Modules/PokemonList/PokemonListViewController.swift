@@ -203,8 +203,11 @@ extension PokemonListViewController: PokemonListViewControllerType {
     
     func onFetchPokemons(on: any PokemonListPresenterType, with pokemonViewModels: [PokemonViewModel]) {
         
-        self.screenStatus(shouldShowLoader: false)
-        self.pokemonCollectionView.reloadData()
+        Task { @MainActor in
+            
+            self.screenStatus(shouldShowLoader: false)
+            self.pokemonCollectionView.reloadData()
+        }        
     }
 }
 
@@ -248,9 +251,12 @@ extension PokemonListViewController: UICollectionViewDataSource {
         }
         
         if let pokemonViewModel = self.presenter.onPokemonListPresenter(on: self, fetchPokemonViewModelFor: indexPath.row) {
-        
-            cell.delegate = self
-            cell.configure(with: pokemonViewModel)
+            
+            Task { @MainActor in
+                
+                cell.delegate = self
+                cell.configure(with: pokemonViewModel)
+            }
         }
         
         return cell

@@ -323,30 +323,42 @@ extension PokemonDetailViewController: PokemonDetailViewControllerType {
         
         self.pokemon = pokemon
         
-        self.title = pokemon.name
-        self.titleLabel.text = pokemon.name
-        self.hpStatStackView.configure(with: String(pokemon.hp))
-        self.weightStatStackView.configure(with: String(pokemon.weight))
-        self.heightStatStackView.configure(with:  String(pokemon.height))
-        self.typeStatStackView.configure(with: pokemon.pokemonTypes)
-        
-        self.speedSlider.configure(statValue: Float(pokemon.speed), minimumValueImageName: "timer.circle", maximumValueImageName: "timer.circle.fill")
-        self.attackSlider.configure(statValue: Float(pokemon.attack), minimumValueImageName: "dumbbell", maximumValueImageName: "dumbbell.fill")
-        self.defenseSlider.configure(statValue: Float(pokemon.defense), minimumValueImageName: "shield", maximumValueImageName: "shield.fill")
-        
-        self.configureImageView(with: pokemon)
+        Task { @MainActor in
+            
+            self.title = pokemon.name
+            self.titleLabel.text = pokemon.name
+            self.hpStatStackView.configure(with: String(pokemon.hp))
+            self.weightStatStackView.configure(with: String(pokemon.weight))
+            self.heightStatStackView.configure(with:  String(pokemon.height))
+            self.typeStatStackView.configure(with: pokemon.pokemonTypes)
+            
+            self.speedSlider.configure(statValue: Float(pokemon.speed), minimumValueImageName: "timer.circle", maximumValueImageName: "timer.circle.fill")
+            self.attackSlider.configure(statValue: Float(pokemon.attack), minimumValueImageName: "dumbbell", maximumValueImageName: "dumbbell.fill")
+            self.defenseSlider.configure(statValue: Float(pokemon.defense), minimumValueImageName: "shield", maximumValueImageName: "shield.fill")
+            
+            self.configureFavoriteButton(isFavorited: pokemon.isFavorited)
+            self.configureImageView(with: pokemon)
+        }
     }
     
     func onPokemonDetailViewController(on pokemonListPresenter: any PokemonDetailPresenterType, didChangeFavoriteStatusWith isFavorited: Bool) {
         
-        let buttonImage = isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
-        self.favoriteButton.setImage(buttonImage, for: .normal)
+        Task { @MainActor in
+            
+            self.configureFavoriteButton(isFavorited: isFavorited)
+        }
     }
 }
 
 // MARK: - Private Methods
 
 private extension PokemonDetailViewController {
+    
+    func configureFavoriteButton(isFavorited: Bool) {
+        
+        let buttonImage = isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
+        self.favoriteButton.setImage(buttonImage, for: .normal)
+    }
     
     func configureImageView(with viewModel: PokemonViewModel) {
 
