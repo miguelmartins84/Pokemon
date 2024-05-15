@@ -118,23 +118,26 @@ class PokemonCellView: UICollectionViewCell {
         
         self.pokemonViewModel = viewModel
         
-        self.pokemonNamelabel.text = viewModel.name
-        let buttonImage = viewModel.isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
-        self.favoriteButton.setImage(buttonImage, for: .normal)
-        self.favoriteButton.isHidden = false
-        
-        if viewModel.imageUrl == nil,
-           let image = UIImage(named: "PokemonLogo") {
+        DispatchQueue.main.async {
+            
+            self.pokemonNamelabel.text = viewModel.name
+            let buttonImage = viewModel.isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
+            self.favoriteButton.setImage(buttonImage, for: .normal)
+            self.favoriteButton.isHidden = false
+            
+            if viewModel.imageUrl == nil,
+               let image = UIImage(named: "PokemonLogo") {
+                    
+                self.pokemonImageView.setImage(image: image)
                 
-            self.pokemonImageView.setImage(image: image)
-            
-        } else if viewModel.image == nil {
-            
-            self.pokemonImageView.showLoader()
-            
-        } else if let image = viewModel.image {
-            
-            self.pokemonImageView.setImage(image: image)
+            } else if viewModel.image == nil {
+                
+                self.pokemonImageView.showLoader()
+                
+            } else if let image = viewModel.image {
+                
+                self.pokemonImageView.setImage(image: image)
+            }
         }
     }
    
