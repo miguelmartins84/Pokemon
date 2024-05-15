@@ -124,7 +124,7 @@ class PokemonCellView: UICollectionViewCell {
         self.favoriteButton.isHidden = false
         
         if viewModel.imageUrl == nil,
-           let image = UIImage(named: "LogoSmall") {
+           let image = UIImage(named: "PokemonLogo") {
                 
             self.pokemonImageView.setImage(image: image)
             
