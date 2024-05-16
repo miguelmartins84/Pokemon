@@ -28,7 +28,7 @@ final class PokemonManagerTests: XCTestCase {
             let pokemon = Pokemon(id: 2, name: "Pikachu", height: 50, weight: 100, types: [.init(type: .init(name: "Pikachu", url: "Pikachu"))], sprites: .init(otherSprites: .init(officialArtwork: nil)), stats: [], order: 1)
             let pokemon2 = Pokemon(id: 1, name: "Bulbasaur", height: 50, weight: 100, types: [.init(type: .init(name: "Bulbasaur", url: "Bulbasaur"))], sprites: .init(otherSprites: .init(officialArtwork: nil)), stats: [], order: 2)
             let pokemon3 = Pokemon(id: 3, name: "Squirtle", height: 50, weight: 100, types: [.init(type: .init(name: "Squirtle", url: "Squirtle"))], sprites: .init(otherSprites: .init(officialArtwork: nil)), stats: [], order: 3)
-            let favoritePokemonDataModel = MockFavoritePokemonDataModel(pokemonId: 1, pokemonName: "Bulbasaur")
+            let favoritePokemonDataModel: FavoritePokemonDataModel = .mock(id: 1, name: "Bulbasaur")
             
             let pokemonModel = PokemonModel(name: "Pikachu", url: "Pikachu")
             let pokemon2Model = PokemonModel(name: "Bulbasaur", url: "Bulbasaur")
@@ -64,7 +64,8 @@ final class PokemonManagerTests: XCTestCase {
     func testDidChangePokemonFavoriteStatusToTrue() async {
         
         do {
-            let favoritePokemonDataModel = MockFavoritePokemonDataModel(pokemonId: 1, pokemonName: "Pikachu")
+
+            let favoritePokemonDataModel: FavoritePokemonDataModel = .mock()
             
             let pokemonService = MockPokemonService(pokemonModels: [], pokemons: [], favoritePokemons: [favoritePokemonDataModel])
             let favoritePokemonsDataManager = MockFavoritePokemonsDataManager()
@@ -77,6 +78,7 @@ final class PokemonManagerTests: XCTestCase {
             let favoriteStatus = try await self.pokemonManager.didChangePokemonFavoriteStatus(with: 1, pokemonName: "Pikachu", isFavorite: true)
             
             XCTAssertTrue(favoriteStatus)
+            XCTAssertEqual(1, favoritePokemonsDataManager.favoritePokemons.count)
             
         } catch {
             
@@ -88,9 +90,8 @@ final class PokemonManagerTests: XCTestCase {
         
         do {
             
-            let pokemon = Pokemon(id: 1, name: "Pikachu", height: 50, weight: 100, types: [.init(type: .init(name: "pikachu", url: "pikachu"))], sprites: .init(otherSprites: .init(officialArtwork: nil)), stats: [], order: 1)
-            let favoritePokemonDataModel = MockFavoritePokemonDataModel(pokemonId: 1, pokemonName: "Pikachu")
-            
+            let pokemon: Pokemon = .mock()
+            let favoritePokemonDataModel: FavoritePokemonDataModel = .mock()
             let pokemonService = MockPokemonService(pokemonModels: [], pokemons: [pokemon], favoritePokemons: [favoritePokemonDataModel])
             let favoritePokemonsDataManager = MockFavoritePokemonsDataManager()
             self.mockPokemonService = pokemonService
@@ -102,6 +103,7 @@ final class PokemonManagerTests: XCTestCase {
             let favoriteStatus = try await self.pokemonManager.didChangePokemonFavoriteStatus(with: 1, pokemonName: "Pikachu", isFavorite: false)
             
             XCTAssertFalse(favoriteStatus)
+            XCTAssertEqual(0, favoritePokemonsDataManager.favoritePokemons.count)
             
         } catch {
             
@@ -114,7 +116,7 @@ final class PokemonManagerTests: XCTestCase {
         let pokemon = Pokemon(id: 2, name: "Pikachu", height: 50, weight: 100, types: [.init(type: .init(name: "Pikachu", url: "Pikachu"))], sprites: .init(otherSprites: .init(officialArtwork: nil)), stats: [], order: 1)
         let pokemon2 = Pokemon(id: 1, name: "Bulbasaur", height: 50, weight: 100, types: [.init(type: .init(name: "Bulbasaur", url: "Bulbasaur"))], sprites: .init(otherSprites: .init(officialArtwork: nil)), stats: [], order: 2)
         let pokemon3 = Pokemon(id: 3, name: "Squirtle", height: 50, weight: 100, types: [.init(type: .init(name: "Squirtle", url: "Squirtle"))], sprites: .init(otherSprites: .init(officialArtwork: nil)), stats: [], order: 3)
-        let favoritePokemonDataModel = MockFavoritePokemonDataModel(pokemonId: 1, pokemonName: "Bulbasaur")
+        let favoritePokemonDataModel: FavoritePokemonDataModel = .mock(id: 1, name: "Bulbasaur")
         
         let pokemonModel = PokemonModel(name: "Pikachu", url: "Pikachu")
         let pokemon2Model = PokemonModel(name: "Bulbasaur", url: "Bulbasaur")
@@ -130,6 +132,8 @@ final class PokemonManagerTests: XCTestCase {
         
         self.pokemonManager = PokemonManager(pokemonService: pokemonService,
                                              favoritePokemonsDataManager: favoritePokemonsDataManager)
+        
+        print(self.pokemonManager.favoritePokemons)
         
         let favoriteStatus = self.pokemonManager.fetchFavoriteStatus(for: 1)
         XCTAssertTrue(favoriteStatus)
@@ -137,38 +141,6 @@ final class PokemonManagerTests: XCTestCase {
         let missingFavoriteStatus = self.pokemonManager.fetchFavoriteStatus(for: 2)
         XCTAssertFalse(missingFavoriteStatus)
 
-    }
-    
-    func testStoreFavoriteStatus() {
-        
-        let pokemon = Pokemon(id: 2, name: "Pikachu", height: 50, weight: 100, types: [.init(type: .init(name: "Pikachu", url: "Pikachu"))], sprites: .init(otherSprites: .init(officialArtwork: nil)), stats: [], order: 1)
-        let pokemon2 = Pokemon(id: 1, name: "Bulbasaur", height: 50, weight: 100, types: [.init(type: .init(name: "Bulbasaur", url: "Bulbasaur"))], sprites: .init(otherSprites: .init(officialArtwork: nil)), stats: [], order: 2)
-        let pokemon3 = Pokemon(id: 3, name: "Squirtle", height: 50, weight: 100, types: [.init(type: .init(name: "Squirtle", url: "Squirtle"))], sprites: .init(otherSprites: .init(officialArtwork: nil)), stats: [], order: 3)
-        let favoritePokemonDataModel = MockFavoritePokemonDataModel(pokemonId: 1, pokemonName: "Bulbasaur")
-        
-        let pokemonModel = PokemonModel(name: "Pikachu", url: "Pikachu")
-        let pokemon2Model = PokemonModel(name: "Bulbasaur", url: "Bulbasaur")
-        let pokemon3Model = PokemonModel(name: "Squirtle", url: "Squirtle")
-        
-        let pokemonService = MockPokemonService(pokemonModels: [pokemonModel, pokemon2Model, pokemon3Model],
-                                                pokemons: [pokemon, pokemon2, pokemon3],
-                                                favoritePokemons: [favoritePokemonDataModel])
-
-        let favoritePokemonsDataManager = MockFavoritePokemonsDataManager(favoritePokemons: [favoritePokemonDataModel])
-        self.mockPokemonService = pokemonService
-        self.mockFavoritePokemonsDataManager = favoritePokemonsDataManager
-        
-        self.pokemonManager = PokemonManager(pokemonService: pokemonService,
-                                             favoritePokemonsDataManager: favoritePokemonsDataManager)
-        
-        self.pokemonManager.didStoreFavoriteStatus(with: 4, pokemonName: "Charmander", isFavorite: true)
-        
-        XCTAssertEqual(2, favoritePokemonsDataManager.favoritePokemons.count)
-        
-        self.pokemonManager.didStoreFavoriteStatus(with: 4, pokemonName: "Charmander", isFavorite: false)
-        
-        XCTAssertEqual(1, favoritePokemonsDataManager.favoritePokemons.count)
-        
     }
     
     /// Missing tests for:

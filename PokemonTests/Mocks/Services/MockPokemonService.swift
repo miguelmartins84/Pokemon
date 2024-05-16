@@ -17,11 +17,11 @@ class MockPokemonService: PokemonServiceType {
     
     var pokemonModels: [PokemonModel] = []
     var pokemons: [Pokemon] = []
-    var favoritePokemons: [MockFavoritePokemonDataModel] = []
+    var favoritePokemons: [FavoritePokemonDataModel] = []
     
     init(pokemonModels: [PokemonModel] = [],
          pokemons: [Pokemon] = [],
-         favoritePokemons: [MockFavoritePokemonDataModel] = []
+         favoritePokemons: [FavoritePokemonDataModel] = []
     ) {
         
         self.pokemonModels = pokemonModels
@@ -51,7 +51,7 @@ class MockPokemonService: PokemonServiceType {
     
     func addPokemonToFavorites(with pokemonId: Int, pokemonName: String) async throws -> Bool {
                 
-        let favoritePokemon = MockFavoritePokemonDataModel(pokemonId: pokemonId, pokemonName: pokemonName)
+        let favoritePokemon = FavoritePokemonDataModel(id: pokemonId, name: pokemonName)
         self.favoritePokemons.append(favoritePokemon)
         
         return true
@@ -59,7 +59,7 @@ class MockPokemonService: PokemonServiceType {
     
     func removePokemonFromFavorites(with pokemonId: Int, pokemonName: String) async throws -> Bool {
         
-        guard let favoritePokemonIndex = self.favoritePokemons.firstIndex(where: { $0.pokemonId == pokemonId }) else {
+        guard let favoritePokemonIndex = self.favoritePokemons.firstIndex(where: { $0.id == pokemonId }) else {
             
             throw MockPokemonServiceError.noPokemonFound
         }

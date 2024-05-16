@@ -15,7 +15,6 @@ protocol PokemonDetailInteractorType {
     var pokemon: PokemonViewModel { get }
     
     func onPokemonDetailInteractorDidChangeFavoriteStatus(on pokemonDetailPresenter: PokemonDetailPresenterType) async throws
-    func onPokemonDetailInteractorDidStoreFavoriteStatus(on pokemonDetailPresenter: PokemonDetailPresenterType)
 }
 
 // MARK: - PokemonInteractor
@@ -52,10 +51,5 @@ extension PokemonDetailInteractor: PokemonDetailInteractorType {
             
             throw PokemonNetworkError.failedToAddPokemon(with: error)
         }
-    }
-    
-    func onPokemonDetailInteractorDidStoreFavoriteStatus(on pokemonDetailPresenter: any PokemonDetailPresenterType) {
-        
-        self.pokemonManager.didStoreFavoriteStatus(with: self.pokemon.id, pokemonName: self.pokemon.name, isFavorite: self.pokemon.isFavorited)
     }
 }

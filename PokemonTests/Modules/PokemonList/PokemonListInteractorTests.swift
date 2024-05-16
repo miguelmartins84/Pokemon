@@ -45,27 +45,6 @@ class PokemonListInteractorTests: XCTestCase {
         XCTAssertFalse(favoriteStatus)
     }
     
-    func testDidStoreFavoriteStatus() {
-        
-        let presenter = MockPokemonListPresenter(
-            interactor: self.pokemonListInteractor,
-            router: MockPokemonListRouter(),
-            fetchedPokemonViewModels: [],
-            refinedPokemonViewModels: [])
-        
-        self.pokemonListInteractor.onPokemonListInteractor(on: presenter, didStoreFavoriteStatusWith: 5, pokemonName: "Charizard")
-        
-        XCTAssertTrue(self.mockPokemonManager.favoritePokemons.contains(5))
-        
-        var favoriteStatus = self.pokemonListInteractor.onPokemonListInteractor(on: presenter, didfetchFavoriteStatusWith: 5)
-        
-        XCTAssertTrue(favoriteStatus)
-        
-        favoriteStatus = self.pokemonListInteractor.onPokemonListInteractor(on: presenter, didfetchFavoriteStatusWith: 6)
-        
-        XCTAssertFalse(favoriteStatus)
-    }
-    
     func testDidSetFavoriteStatus() {
         
         let presenter = MockPokemonListPresenter(
@@ -81,10 +60,19 @@ class PokemonListInteractorTests: XCTestCase {
                 var favoriteStatus = try await self.pokemonListInteractor.onPokemonListInteractor(on: presenter, didSetFavoriteStatusWith: 3, pokemonName: "Pikachu")
                 
                 XCTAssertFalse(favoriteStatus)
+                XCTAssertTrue(self.mockPokemonManager.favoritePokemons.contains(3))
+                
+                favoriteStatus = self.pokemonListInteractor.onPokemonListInteractor(on: presenter, didfetchFavoriteStatusWith: 3)
+                
+                XCTAssertTrue(favoriteStatus)
                 
                 favoriteStatus = try await self.pokemonListInteractor.onPokemonListInteractor(on: presenter, didSetFavoriteStatusWith: 3, pokemonName: "Pikachu")
                 
                 XCTAssertTrue(favoriteStatus)
+                
+                favoriteStatus = self.pokemonListInteractor.onPokemonListInteractor(on: presenter, didfetchFavoriteStatusWith: 3)
+                
+                XCTAssertFalse(favoriteStatus)
                 
             } catch {
                 

@@ -167,15 +167,10 @@ extension PokemonListPresenter: PokemonListPresenterType {
                                                                                        didSetFavoriteStatusWith: pokemonViewModel.id, 
                                                                                        pokemonName: pokemonViewModel.name)
 
-                /// 2. Invoke interactor to store the favorite status on the database
-                self.interactor.onPokemonListInteractor(on: self,
-                                                        didStoreFavoriteStatusWith: pokemonViewModel.id,
-                                                        pokemonName: pokemonViewModel.name)
-                
-                /// 3. Update favorite status for the pokemon view models
+                /// 2. Update favorite status for the pokemon view models
                 self.updateFavoriteStatusForPokemonViewModel(with: pokemonViewModel.id, favoriteStatus: favoriteStatus)
                 
-                /// 4. Inform the view to reload the collection view
+                /// 3. Inform the view to reload the collection view
                 self.view?.onPokemonListPresenterDidUpdatePokemons(on: self)
 
             } catch {
@@ -375,6 +370,8 @@ private extension PokemonListPresenter {
 
             self.fetchedPokemonViewModels[row].setFavoriteStatus(isFavorited: favoriteStatus)
         }
+
+        self.fetchedPokemonViewModels.forEach { print("\($0.id) \($0.name) \($0.isFavorited)") }
     }
     
     func clearFavoriteStatus(with ids: Set<Int>) {
@@ -388,7 +385,6 @@ private extension PokemonListPresenter {
         for index in pokemonViewModels.indices {
             
             let fetchedPokemonViewModel = pokemonViewModels[index]
-            let isFavorited = fetchedPokemonViewModel.isFavorited
             let containsId = ids.contains(fetchedPokemonViewModel.id)
             
             self.updateFavoriteStatusForPokemonViewModel(with: fetchedPokemonViewModel.id, favoriteStatus: containsId)            

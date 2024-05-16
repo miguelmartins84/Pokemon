@@ -25,7 +25,6 @@ protocol PokemonManagerType {
     func fetchPokemons(withNamesStartingWith searchText: String) async throws -> [Pokemon]
     func didChangePokemonFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool) async throws -> Bool
     func fetchFavoriteStatus(for pokemonId: Int) -> Bool
-    func didStoreFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool)
 }
 
 // MARK: - PokemonManager
@@ -71,7 +70,11 @@ class PokemonManager {
         
         self.pokemonService = pokemonService
         self.favoritePokemonsDataManager = favoritePokemonsDataManager
-        self.fetchFavoritePokemons()
+        
+        Task {
+            
+            try await self.fetchFavoritePokemons()
+        }
     }
 }
 
@@ -196,13 +199,16 @@ extension PokemonManager: PokemonManagerType {
         }
     }
     
-    func fetchFavoritePokemons(){
+    func fetchFavoritePokemons() async throws {
         
-        let favorites = self.favoritePokemonsDataManager.getFavorites()
-        
-        favorites.forEach { favoritePokemonDataModel in
+        Task {
             
-            self.favoritePokemons.insert(favoritePokemonDataModel.id)
+            let favorites = await self.favoritePokemonsDataManager.getFavorites()
+            
+            favorites.forEach { favoritePokemonDataModel in
+                
+                self.favoritePokemons.insert(favoritePokemonDataModel.id)
+            }
         }
     }
     
@@ -211,32 +217,25 @@ extension PokemonManager: PokemonManagerType {
         self.favoritePokemons.contains(pokemonId)
     }
     
-    func didStoreFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool) {
-        
-        let favoritePokemon = FavoritePokemonDataModel()
-        favoritePokemon.id = pokemonId
-        favoritePokemon.name = pokemonName
-        
-        if isFavorite == true {
-            
-            self.favoritePokemonsDataManager.addToFavorites(favoritePokemonDataModel: favoritePokemon)
-            self.favoritePokemons.insert(favoritePokemon.id)
-        } else {
-            
-            self.favoritePokemonsDataManager.removeFromFavorites(favoritePokemonDataModel: favoritePokemon)
-            self.favoritePokemons.remove(favoritePokemon.id)
-        }
-    }
-    
     func didChangePokemonFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool) async throws -> Bool {
         
+        let favoritePokemon = FavoritePokemonDataModel(id: pokemonId, name: pokemonName)
+        
         if isFavorite == true {
 
-            return try await self.pokemonService.addPokemonToFavorites(with: pokemonId, pokemonName: pokemonName)
+            let favoriteStatus = try await self.pokemonService.addPokemonToFavorites(with: pokemonId, pokemonName: pokemonName)
+            try await self.favoritePokemonsDataManager.addToFavorites(favoritePokemonDataModel: favoritePokemon)
+            self.favoritePokemons.insert(favoritePokemon.id)
 
+            return favoriteStatus
+            
         } else {
 
-            return try await self.pokemonService.removePokemonFromFavorites(with: pokemonId, pokemonName: pokemonName)
+            let favoriteStatus = try await self.pokemonService.removePokemonFromFavorites(with: pokemonId, pokemonName: pokemonName)
+            try await self.favoritePokemonsDataManager.removeFromFavorites(favoritePokemonDataModel: favoritePokemon)
+            self.favoritePokemons.remove(favoritePokemon.id)
+            
+            return favoriteStatus
         }
     }
 }

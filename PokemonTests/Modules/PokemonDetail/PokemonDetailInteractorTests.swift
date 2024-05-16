@@ -24,19 +24,6 @@ class PokemonDetailInteractorTests: XCTestCase {
                                                                pokemonManager: self.mockPokemonManager)
     }
     
-    func testDidStoreFavoriteStatus() {
-        
-        let pokemonDetailPresenter: PokemonDetailPresenterType = MockPokemonDetailPresenter(
-            view: nil,
-            interactor: self.pokemonDetailInteractor,
-            router: MockPokemonDetailRouter()
-        )
-        
-        self.pokemonDetailInteractor.onPokemonDetailInteractorDidStoreFavoriteStatus(on: pokemonDetailPresenter)
-        
-        XCTAssertTrue(self.mockPokemonManager.fetchFavoriteStatus(for: 4))
-    }
-    
     func testDidChangeFavoriteStatus() {
         
         let pokemonDetailPresenter: PokemonDetailPresenterType = MockPokemonDetailPresenter(
@@ -52,10 +39,12 @@ class PokemonDetailInteractorTests: XCTestCase {
                 try await self.pokemonDetailInteractor.onPokemonDetailInteractorDidChangeFavoriteStatus(on: pokemonDetailPresenter)
                 
                 XCTAssertTrue(self.pokemonDetailInteractor.pokemon.isFavorited)
+                XCTAssertTrue(self.mockPokemonManager.fetchFavoriteStatus(for: 4))
                 
                 try await self.pokemonDetailInteractor.onPokemonDetailInteractorDidChangeFavoriteStatus(on: pokemonDetailPresenter)
                 
                 XCTAssertFalse(self.pokemonDetailInteractor.pokemon.isFavorited)
+                XCTAssertFalse(self.mockPokemonManager.fetchFavoriteStatus(for: 4))
                 
             } catch {
                 
