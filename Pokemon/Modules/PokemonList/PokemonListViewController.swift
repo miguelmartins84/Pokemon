@@ -357,7 +357,6 @@ extension PokemonListViewController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {
         
         let searchText = searchController.searchBar.text
-        print(searchText ?? "")
         
         if let searchText,
             searchText.isEmpty == false {
@@ -372,8 +371,6 @@ extension PokemonListViewController: UISearchBarDelegate {
     func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
         
         let searchText = searchController.searchBar.text
-
-        print(searchText ?? "")
         
         if self.pokemonCollectionView.numberOfItems(inSection: 0) > 0 {
             

@@ -368,10 +368,8 @@ private extension PokemonListPresenter {
         
         if let row = self.refinedPokemonViewModels.firstIndex(where: { $0.id == id }) {
 
-            self.fetchedPokemonViewModels[row].setFavoriteStatus(isFavorited: favoriteStatus)
+            self.refinedPokemonViewModels[row].setFavoriteStatus(isFavorited: favoriteStatus)
         }
-
-        self.fetchedPokemonViewModels.forEach { print("\($0.id) \($0.name) \($0.isFavorited)") }
     }
     
     func clearFavoriteStatus(with ids: Set<Int>) {

@@ -206,6 +206,8 @@ class PokemonDetailViewController: ViewController {
     
     @objc func changeFavoriteStatus() {
         
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
         self.presenter.onPokemonDetailPresenterDidChangeFavoriteStatus(on: self)
     }
     
