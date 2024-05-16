@@ -254,7 +254,7 @@ extension PokemonListPresenter: PokemonListPresenterType {
 
 // MARK: - Private Methods
 
-extension PokemonListPresenter {
+private extension PokemonListPresenter {
     
     func fetchImages(for rows: [Int], isInitialFetch: Bool = false) async {
                         
@@ -379,13 +379,19 @@ extension PokemonListPresenter {
     
     func clearFavoriteStatus(with ids: Set<Int>) {
         
-        let favoritePokemons = self.fetchedPokemonViewModels.filter { $0.isFavorited }
+        self.clearFavoriteStatus(with: ids, for: self.fetchedPokemonViewModels)
+        self.clearFavoriteStatus(with: ids, for: self.refinedPokemonViewModels)
+    }
+    
+    func clearFavoriteStatus(with ids: Set<Int>, for pokemonViewModels: [PokemonViewModel]) {
         
-        let pokemonsToRemove = favoritePokemons.filter { !ids.contains($0.id) }
-        
-        pokemonsToRemove.forEach { pokemonViewModel in
-
-            self.updateFavoriteStatusForPokemonViewModel(with: pokemonViewModel.id, favoriteStatus: false)
+        for index in pokemonViewModels.indices {
+            
+            let fetchedPokemonViewModel = pokemonViewModels[index]
+            let isFavorited = fetchedPokemonViewModel.isFavorited
+            let containsId = ids.contains(fetchedPokemonViewModel.id)
+            
+            self.updateFavoriteStatusForPokemonViewModel(with: fetchedPokemonViewModel.id, favoriteStatus: containsId)            
         }
     }
 }
