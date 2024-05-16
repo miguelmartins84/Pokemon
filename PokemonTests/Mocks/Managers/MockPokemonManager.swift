@@ -21,8 +21,7 @@ class MockPokemonManager: PokemonManagerType {
     
     var refinedPokemons: [Pokemon]
     var favoritePokemons: Set<Int> = []
-    
-    var delegate: PokemonManagerDelegateType?
+
     var shouldThrowError: Bool
     
     var isInSearchContext: Bool
@@ -32,7 +31,6 @@ class MockPokemonManager: PokemonManagerType {
          refinedPokemonModels: [PokemonModel] = [],
          allFetchedPokemons: [Pokemon] = [],
          refinedPokemons: [Pokemon] = [],
-         delegate: PokemonManagerDelegateType? = nil,
          isInSearchContext: Bool = false,
          shouldThrowError: Bool = false
     ) {
@@ -42,7 +40,6 @@ class MockPokemonManager: PokemonManagerType {
         self.allFetchedPokemons = allFetchedPokemons
         self.refinedPokemons = refinedPokemons
         self.favoritePokemons = favoritePokemons
-        self.delegate = delegate
         self.isInSearchContext = isInSearchContext
         self.shouldThrowError = shouldThrowError
     }

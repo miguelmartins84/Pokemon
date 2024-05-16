@@ -9,7 +9,7 @@ import Foundation
 @testable import Pokemon
 
 class MockPokemonListPresenter: PokemonListPresenterType {
-    
+
     var view: PokemonListViewControllerType?
     
     var interactor: PokemonListInteractorType
@@ -68,6 +68,10 @@ class MockPokemonListPresenter: PokemonListPresenterType {
     }
     
     func onPokemonListInteractor(on pokemoListInteractor: PokemonListInteractorType, didChangeFavoriteStatusOf pokemonId: Int) {
+        
+    }
+    
+    func onPokemonListPresenterUpdateListOfFavoritePokemons(on pokemonListView: PokemonListViewControllerType) {
         
     }
 }

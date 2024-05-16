@@ -7,13 +7,6 @@
 
 import Foundation
 
-// MARK: - PokemonManagerDelegateType definition
-
-protocol PokemonManagerDelegateType: AnyObject {
-    
-    func onPokemonManager(on pokemonManager: PokemonManagerType, didChangeFavoriteStatusOfPokemonWith pokemonId: Int, favoriteStatus: Bool)
-}
-
 // MARK: - PokemonManagerType definition
 
 protocol PokemonManagerType {
@@ -26,8 +19,6 @@ protocol PokemonManagerType {
     var refinedPokemons: [Pokemon] { get }
     
     var isInSearchContext: Bool { get }
-    
-    var delegate: PokemonManagerDelegateType? {get set}
     
     func fetchInitialPokemons() async throws -> [Pokemon]
     func fetchPokemons() async throws -> [Pokemon]
@@ -72,8 +63,6 @@ class PokemonManager {
     var isInSearchContext: Bool = false
 
     private let limit = 60
-    
-    weak var delegate: PokemonManagerDelegateType?
 
     init(
         pokemonService: PokemonServiceType = PokemonService(),
@@ -242,23 +231,12 @@ extension PokemonManager: PokemonManagerType {
     func didChangePokemonFavoriteStatus(with pokemonId: Int, pokemonName: String, isFavorite: Bool) async throws -> Bool {
         
         if isFavorite == true {
-            
-            /// 1. Add pokemon to favorites
-            let favoriteStatus = try await self.pokemonService.addPokemonToFavorites(with: pokemonId, pokemonName: pokemonName)
-            
-            /// 2. Inform delegates that the pokemon favorite status changed
-            self.delegate?.onPokemonManager(on: self, didChangeFavoriteStatusOfPokemonWith: pokemonId, favoriteStatus: favoriteStatus)
-            
-            return favoriteStatus
+
+            return try await self.pokemonService.addPokemonToFavorites(with: pokemonId, pokemonName: pokemonName)
 
         } else {
-            /// 1. Remove pokemon from favorites
-            let favoriteStatus = try await self.pokemonService.removePokemonFromFavorites(with: pokemonId, pokemonName: pokemonName)
-            
-            /// 2. Inform delegates that the pokemon favorite status changed
-            self.delegate?.onPokemonManager(on: self, didChangeFavoriteStatusOfPokemonWith: pokemonId, favoriteStatus: favoriteStatus)
-            
-            return favoriteStatus
+
+            return try await self.pokemonService.removePokemonFromFavorites(with: pokemonId, pokemonName: pokemonName)
         }
     }
 }
