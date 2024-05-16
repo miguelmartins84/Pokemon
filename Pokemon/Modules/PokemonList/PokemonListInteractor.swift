@@ -20,6 +20,7 @@ protocol PokemonListInteractorType {
     func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didSetFavoriteStatusWith pokemonId: Int, pokemonName: String) async throws -> Bool
     func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didStoreFavoriteStatusWith pokemonId: Int, pokemonName: String)
     func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, fetchImagesFor imageUrlModels: [PokemonImageUrlModel]) async throws -> [PokemonImageModel]
+    func onPokemonListInteractorFetchPokemonsFavoriteStatus(on pokemonListPresenter: PokemonListPresenterType) -> Set<Int>
 }
 
 // MARK: - PokemonListInteractor
@@ -38,13 +39,17 @@ final class PokemonListInteractor {
         
         self.asyncImageManager = asyncImageManager
         self.pokemonManager = pokemonManager
-        self.pokemonManager.delegate = self
     }
 }
 
 // MARK: - PokemonListInteractorType implementation
 
 extension PokemonListInteractor: PokemonListInteractorType {
+    
+    func onPokemonListInteractorFetchPokemonsFavoriteStatus(on pokemonListPresenter: PokemonListPresenterType) -> Set<Int> {
+        
+        return self.pokemonManager.favoritePokemons
+    }
 
     func onPokemonListInteractorFetchInitialPokemons(on pokemonListPresenter: PokemonListPresenterType) async throws -> [Pokemon] {
         
@@ -107,15 +112,5 @@ extension PokemonListInteractor: PokemonListInteractorType {
             
             return fetchedImages
         }
-    }
-}
-
-// MARK: - PokemonManagerDelegateType implementation
-
-extension PokemonListInteractor: PokemonManagerDelegateType {
-    
-    func onPokemonManager(on pokemonManager: any PokemonManagerType, didChangeFavoriteStatusOfPokemonWith pokemonId: Int, favoriteStatus: Bool) {
-        
-        self.presenter?.onPokemonListInteractor(on: self, didChangeFavoriteStatusOf: pokemonId)
     }
 }

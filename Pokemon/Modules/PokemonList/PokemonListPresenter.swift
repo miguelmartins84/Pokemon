@@ -24,6 +24,7 @@ protocol PokemonListPresenterType: AnyObject {
     func onPokemonListPresenter(on pokemonListView: PokemonListViewControllerType, userTappedFavoriteButtonWith: PokemonViewModel)
     func onPokemonListPresenter(on pokemonListView: PokemonListViewControllerType, fetchPokemonViewModelFor row: Int) -> PokemonViewModel?
     func onPokemonListPresenter(on pokemonListView: PokemonListViewControllerType, fetchImagesfor rows: [Int], isInitialFetch: Bool) async
+    func onPokemonListPresenterUpdateListOfFavoritePokemons(on pokemonListView: PokemonListViewControllerType)
     func onPokemonListPresenterFetchNextPokemons(on pokemonListView: PokemonListViewControllerType)
     func onPokemonListPresenterFetchNumberOfPokemons(on pokemonListView: PokemonListViewControllerType) -> Int
     
@@ -42,6 +43,7 @@ final class PokemonListPresenter {
     var refinedPokemonViewModels: [PokemonViewModel] = []
     var fetchedImages: [Int: UIImage] = [:]
     private var isSearchContext: Bool = false
+    private var isInitialSearch: Bool = true
     
     private var taskHandler: Task<Void, Never>?
     
@@ -59,6 +61,25 @@ final class PokemonListPresenter {
 // MARK: - PokemonListPresenterType implementation
 
 extension PokemonListPresenter: PokemonListPresenterType {
+    
+    func onPokemonListPresenterUpdateListOfFavoritePokemons(on pokemonListView: PokemonListViewControllerType) {
+        
+        guard self.isInitialSearch == false else {
+            
+            return
+        }
+        
+        let favoriteIds = self.interactor.onPokemonListInteractorFetchPokemonsFavoriteStatus(on: self)
+        
+        self.clearFavoriteStatus(with: favoriteIds)
+        
+        favoriteIds.forEach { favoriteId in
+            
+            self.updateFavoriteStatusForPokemonViewModel(with: favoriteId, favoriteStatus: true)
+        }
+        
+        self.view?.onPokemonListPresenterDidUpdatePokemons(on: self)
+    }
 
     func onPokemonListPresenter(on pokemonListView: PokemonListViewControllerType) {
         
@@ -72,14 +93,16 @@ extension PokemonListPresenter: PokemonListPresenterType {
                 let pokemons = try await self.interactor.onPokemonListInteractorFetchInitialPokemons(on: self)
                 
                 /// 2. Append pokemon view models to the auxiliary arrays and set their favorite status according to the realm database
-                let pokemonViewModels = self.appendPokemonViewModels(from: pokemons, isInitialFetch: true)
+                let pokemonViewModels = self.appendPokemonViewModels(from: pokemons, isInitialFetch: self.isInitialSearch)
                 
                 /// 3. Fetch the initial batch of images for the number of view models
                 let indexes = Array(0 ... pokemonViewModels.count - 1)
-                await self.fetchImages(for: indexes, isInitialFetch: true)
+                await self.fetchImages(for: indexes, isInitialFetch: self.isInitialSearch)
+                
+                self.isInitialSearch = false
 
                 /// 4. Inform the view to reload the collection view
-                self.view?.onFetchPokemons(on: self, with: pokemonViewModels)
+                self.view?.onPokemonListPresenterDidUpdatePokemons(on: self)
 
             } catch {
                 
@@ -114,7 +137,7 @@ extension PokemonListPresenter: PokemonListPresenterType {
                                                                                  didFetchPokemonsWithNamesStartingWith: searchText)
                 
                 /// 2. Append pokemon view models to the auxiliary arrays and set their favorite status according to the database
-                let pokemonViewModels = self.appendPokemonViewModels(from: pokemons, isInitialFetch: false)
+                let _ = self.appendPokemonViewModels(from: pokemons, isInitialFetch: false)
                 
                 if self.refinedPokemonViewModels.count > 0 {
                     
@@ -124,7 +147,7 @@ extension PokemonListPresenter: PokemonListPresenterType {
                 }
                 
                 /// 4. Inform the view to reload the collection view
-                self.view?.onFetchPokemons(on: self, with: pokemonViewModels)
+                self.view?.onPokemonListPresenterDidUpdatePokemons(on: self)
                 
             } catch {
                 
@@ -153,7 +176,7 @@ extension PokemonListPresenter: PokemonListPresenterType {
                 self.updateFavoriteStatusForPokemonViewModel(with: pokemonViewModel.id, favoriteStatus: favoriteStatus)
                 
                 /// 4. Inform the view to reload the collection view
-                self.view?.onFetchPokemons(on: self, with: self.fetchedPokemonViewModels)
+                self.view?.onPokemonListPresenterDidUpdatePokemons(on: self)
 
             } catch {
                 
@@ -192,10 +215,10 @@ extension PokemonListPresenter: PokemonListPresenterType {
                 let pokemons = try await self.interactor.onPokemonListInteractorfetchNextPokemons(on: self)
                 
                 /// 2. Append pokemon view models to the auxiliary arrays and set their favorite status according to the database
-                let pokemonViewModels = self.appendPokemonViewModels(from: pokemons, isInitialFetch: false)
+                let _ = self.appendPokemonViewModels(from: pokemons, isInitialFetch: false)
 
                 /// 3. Inform the view to reload the collection view
-                self.view?.onFetchPokemons(on: self, with: pokemonViewModels)
+                self.view?.onPokemonListPresenterDidUpdatePokemons(on: self)
 
             } catch {
                 
@@ -293,12 +316,10 @@ extension PokemonListPresenter {
             }
             
             /// 6. Inform the view to reload the collection view
-            
-            let pokemonViewModels = self.isSearchContext ? self.refinedPokemonViewModels : self.fetchedPokemonViewModels
-            
+
             Task { @MainActor in
             
-                self.view?.onFetchPokemons(on: self, with: pokemonViewModels)
+                self.view?.onPokemonListPresenterDidUpdatePokemons(on: self)
             }
             
         } catch {
@@ -353,6 +374,18 @@ extension PokemonListPresenter {
         if let row = self.refinedPokemonViewModels.firstIndex(where: { $0.id == id }) {
 
             self.fetchedPokemonViewModels[row].setFavoriteStatus(isFavorited: favoriteStatus)
+        }
+    }
+    
+    func clearFavoriteStatus(with ids: Set<Int>) {
+        
+        let favoritePokemons = self.fetchedPokemonViewModels.filter { $0.isFavorited }
+        
+        let pokemonsToRemove = favoritePokemons.filter { !ids.contains($0.id) }
+        
+        pokemonsToRemove.forEach { pokemonViewModel in
+
+            self.updateFavoriteStatusForPokemonViewModel(with: pokemonViewModel.id, favoriteStatus: false)
         }
     }
 }

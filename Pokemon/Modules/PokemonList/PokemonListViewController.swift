@@ -11,7 +11,8 @@ import UIKit
 protocol PokemonListViewControllerType: AnyObject {
     
     var presenter: PokemonListPresenterType { get set }
-    func onFetchPokemons(on: PokemonListPresenterType, with pokemonViewModels: [PokemonViewModel])
+    
+    func onPokemonListPresenterDidUpdatePokemons(on: PokemonListPresenterType)
 }
 
 // MARK: - PokemonListViewController
@@ -112,6 +113,13 @@ class PokemonListViewController: ViewController {
 
         fatalError("init(coder:) has not been implemented")
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        
+        super.viewWillAppear(animated)
+        self.presenter.onPokemonListPresenterUpdateListOfFavoritePokemons(on: self)
+        self.pokemonCollectionView.reloadData()
+    }
   
     override func viewDidLoad() {
         
@@ -201,13 +209,13 @@ class PokemonListViewController: ViewController {
 
 extension PokemonListViewController: PokemonListViewControllerType {
     
-    func onFetchPokemons(on: any PokemonListPresenterType, with pokemonViewModels: [PokemonViewModel]) {
+    func onPokemonListPresenterDidUpdatePokemons(on: any PokemonListPresenterType) {
         
         Task { @MainActor in
             
             self.screenStatus(shouldShowLoader: false)
             self.pokemonCollectionView.reloadData()
-        }        
+        }
     }
 }
 
