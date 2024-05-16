@@ -18,7 +18,6 @@ protocol PokemonListInteractorType {
     func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didFetchPokemonsWithNamesStartingWith searchText: String) async throws -> [Pokemon]
     func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didfetchFavoriteStatusWith pokemonId: Int) -> Bool
     func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didSetFavoriteStatusWith pokemonId: Int, pokemonName: String) async throws -> Bool
-    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didStoreFavoriteStatusWith pokemonId: Int, pokemonName: String)
     func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, fetchImagesFor imageUrlModels: [PokemonImageUrlModel]) async throws -> [PokemonImageModel]
     func onPokemonListInteractorFetchPokemonsFavoriteStatus(on pokemonListPresenter: PokemonListPresenterType) -> Set<Int>
 }
@@ -81,12 +80,6 @@ extension PokemonListInteractor: PokemonListInteractorType {
             
             throw PokemonNetworkError.failedToAddPokemon(with: error)
         }
-    }
-    
-    func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, didStoreFavoriteStatusWith pokemonId: Int, pokemonName: String) {
-        
-        let favoriteStatus = self.pokemonManager.fetchFavoriteStatus(for: pokemonId)
-        self.pokemonManager.didStoreFavoriteStatus(with: pokemonId, pokemonName: pokemonName, isFavorite: !favoriteStatus)
     }
     
     func onPokemonListInteractor(on pokemonListPresenter: PokemonListPresenterType, fetchImagesFor imageUrlModels: [PokemonImageUrlModel]) async throws -> [PokemonImageModel] {

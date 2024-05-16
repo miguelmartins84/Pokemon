@@ -67,9 +67,6 @@ extension PokemonDetailPresenter: PokemonDetailPresenterType {
 
                 /// 2. Invoke interactor to inform that a pokemon did change its favorite status
                 try await self.interactor.onPokemonDetailInteractorDidChangeFavoriteStatus(on: self)
-                
-                /// 3. Store the new status on the database
-                self.interactor.onPokemonDetailInteractorDidStoreFavoriteStatus(on: self)
 
                 let updatedPokemon = self.interactor.pokemon
                 self.pokemon = updatedPokemon

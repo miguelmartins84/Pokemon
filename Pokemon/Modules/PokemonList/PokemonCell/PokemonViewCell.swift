@@ -1,5 +1,5 @@
 //
-//  PokemonCellView.swift
+//  PokemonViewCell.swift
 //  Pokemon
 //
 //  Created by Miguel Martins on 09/05/2024.
@@ -12,9 +12,9 @@ protocol PokemonCellViewDelegate: AnyObject {
     func didTapFavoriteButton(with pokemonViewModel: PokemonViewModel)
 }
 
-class PokemonCellView: UICollectionViewCell {
+class PokemonViewCell: UICollectionViewCell {
     
-    static let identifier = String(describing: PokemonCellView.self)
+    static let identifier = String(describing: PokemonViewCell.self)
     
     weak var delegate: PokemonCellViewDelegate?
     
@@ -44,6 +44,7 @@ class PokemonCellView: UICollectionViewCell {
     private var favoriteButton: UIButton = {
         
         let button = UIButton().usingAutoLayout()
+        button.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 20, leading: 20, bottom: 20, trailing: 20)
         button.setImage(UIImage(systemName: "star"), for: .normal)
         button.backgroundColor = .clear
         button.layer.cornerRadius = 15
@@ -118,26 +119,25 @@ class PokemonCellView: UICollectionViewCell {
         
         self.pokemonViewModel = viewModel
         
-        DispatchQueue.main.async {
+        print("Updating \(viewModel.name) id: \(viewModel.id)")
+    
+        self.pokemonNamelabel.text = viewModel.name
+        let buttonImage = viewModel.isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
+        self.favoriteButton.setImage(buttonImage, for: .normal)
+        self.favoriteButton.isHidden = false
+        
+        if viewModel.imageUrl == nil,
+           let image = UIImage(named: "PokemonLogo") {
+                
+            self.pokemonImageView.setImage(image: image)
             
-            self.pokemonNamelabel.text = viewModel.name
-            let buttonImage = viewModel.isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
-            self.favoriteButton.setImage(buttonImage, for: .normal)
-            self.favoriteButton.isHidden = false
+        } else if viewModel.image == nil {
             
-            if viewModel.imageUrl == nil,
-               let image = UIImage(named: "PokemonLogo") {
-                    
-                self.pokemonImageView.setImage(image: image)
-                
-            } else if viewModel.image == nil {
-                
-                self.pokemonImageView.showLoader()
-                
-            } else if let image = viewModel.image {
-                
-                self.pokemonImageView.setImage(image: image)
-            }
+            self.pokemonImageView.showLoader()
+            
+        } else if let image = viewModel.image {
+            
+            self.pokemonImageView.setImage(image: image)
         }
     }
    
@@ -150,6 +150,9 @@ class PokemonCellView: UICollectionViewCell {
         /// 1. Update favorite button before data work
         let buttonImage = pokemonViewModel.isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
         self.favoriteButton.setImage(buttonImage, for: .normal)
+        
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
 
         self.delegate?.didTapFavoriteButton(with: pokemonViewModel)
     }

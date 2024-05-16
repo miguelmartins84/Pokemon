@@ -84,7 +84,7 @@ class PokemonListViewController: ViewController {
         collectionView.layer.shadowPath = UIBezierPath(rect: collectionView.bounds).cgPath
         collectionView.accessibilityIdentifier = PokemonConstants.PokemonListScreen.AccessibilityIdentifiers.pokemonCollectionView
         
-        collectionView.register(PokemonCellView.self,forCellWithReuseIdentifier: PokemonCellView.identifier)
+        collectionView.register(PokemonViewCell.self,forCellWithReuseIdentifier: PokemonViewCell.identifier)
         
         collectionView.isHidden = true
         
@@ -253,18 +253,15 @@ extension PokemonListViewController: UICollectionViewDataSource {
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PokemonCellView.identifier, for: indexPath) as? PokemonCellView else {
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PokemonViewCell.identifier, for: indexPath) as? PokemonViewCell else {
             
             return UICollectionViewCell()
         }
         
         if let pokemonViewModel = self.presenter.onPokemonListPresenter(on: self, fetchPokemonViewModelFor: indexPath.row) {
-            
-            Task { @MainActor in
-                
-                cell.delegate = self
-                cell.configure(with: pokemonViewModel)
-            }
+             
+            cell.configure(with: pokemonViewModel)
+            cell.delegate = self
         }
         
         return cell
@@ -406,7 +403,11 @@ extension PokemonListViewController: UISearchBarDelegate {
 extension PokemonListViewController: PokemonCellViewDelegate {
     
     func didTapFavoriteButton(with pokemonViewModel: PokemonViewModel) {
-        
-        self.presenter.onPokemonListPresenter(on: self, userTappedFavoriteButtonWith: pokemonViewModel)
+
+        Task { @MainActor in
+
+            self.pokemonCollectionView.reloadData()
+            self.presenter.onPokemonListPresenter(on: self, userTappedFavoriteButtonWith: pokemonViewModel)
+        }
     }
 }
