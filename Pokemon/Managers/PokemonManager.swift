@@ -158,8 +158,7 @@ extension PokemonManager: PokemonManagerType {
             
             self.clearState(isSearch: true)
             
-            let filteredPokemonModels = self.allPokemonModels.filter( { $0.name.hasPrefix(searchText.lowercased())})
-            print(filteredPokemonModels.map { $0.name })
+            let filteredPokemonModels = self.allPokemonModels.filter( { $0.name.hasPrefix(searchText.lowercased())})            
             
             self.refinedPokemonModels = filteredPokemonModels
             

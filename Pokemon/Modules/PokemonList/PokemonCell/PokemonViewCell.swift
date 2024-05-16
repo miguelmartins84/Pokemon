@@ -118,8 +118,6 @@ class PokemonViewCell: UICollectionViewCell {
     func configure(with viewModel: PokemonViewModel) {
         
         self.pokemonViewModel = viewModel
-        
-        print("Updating \(viewModel.name) id: \(viewModel.id)")
     
         self.pokemonNamelabel.text = viewModel.name
         let buttonImage = viewModel.isFavorited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
